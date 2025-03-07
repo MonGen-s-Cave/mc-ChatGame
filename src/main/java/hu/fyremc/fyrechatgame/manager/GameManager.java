@@ -38,9 +38,7 @@ public class GameManager {
 
     public static void handleAnswer(@NotNull Player player, @NotNull String answer) {
         ACTIVE_GAMES.values().forEach(handler -> {
-            if (handler.getState() == GameState.ACTIVE) {
-                handler.handleAnswer(player, answer);
-            }
+            if (handler.getState() == GameState.ACTIVE) handler.handleAnswer(player, answer);
         });
     }
 
@@ -51,8 +49,6 @@ public class GameManager {
     }
 
     public static void removeInactiveGames() {
-        ACTIVE_GAMES.entrySet().removeIf(entry ->
-                entry.getValue().getState() == GameState.INACTIVE
-        );
+        ACTIVE_GAMES.entrySet().removeIf(entry -> entry.getValue().getState() == GameState.INACTIVE);
     }
 }

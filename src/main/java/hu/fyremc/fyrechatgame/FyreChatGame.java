@@ -3,8 +3,14 @@ package hu.fyremc.fyrechatgame;
 import com.artillexstudios.axapi.config.Config;
 import com.github.Anon8281.universalScheduler.UniversalScheduler;
 import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
+import hu.fyremc.fyrechatgame.database.Database;
+import hu.fyremc.fyrechatgame.database.DatabaseConfig;
+import hu.fyremc.fyrechatgame.hooks.plugins.PlaceholderAPI;
 import hu.fyremc.fyrechatgame.listener.GameListener;
 import hu.fyremc.fyrechatgame.processor.AutoGameProcessor;
+import hu.fyremc.fyrechatgame.services.GameService;
+import hu.fyremc.fyrechatgame.services.MainThreadExecutorService;
+import hu.fyremc.fyrechatgame.utils.LoggerUtils;
 import lombok.Getter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -15,13 +21,17 @@ import com.artillexstudios.axapi.libs.boostedyaml.boostedyaml.settings.loader.Lo
 import com.artillexstudios.axapi.libs.boostedyaml.boostedyaml.settings.updater.UpdaterSettings;
 
 import java.io.File;
+import java.util.concurrent.Executor;
 
 public final class FyreChatGame extends ZapperJavaPlugin {
-    @Getter private static FyreChatGame instance;
-    @Getter private TaskScheduler scheduler;
-    @Getter private Config language;
-    private Config config;
-    private AutoGameProcessor gameProcessor;
+    @Getter static FyreChatGame instance;
+    @Getter TaskScheduler scheduler;
+    @Getter Config language;
+    @Getter Database database;
+    @Getter GameService gameService;
+    @Getter Executor mainThreadExecutor;
+    Config config;
+    AutoGameProcessor gameProcessor;
 
     @Override
     public void onLoad() {
@@ -33,15 +43,23 @@ public final class FyreChatGame extends ZapperJavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         initializeComponents();
+        initializeDatabase();
+        MainThreadExecutorService.initialize();
 
         getServer().getPluginManager().registerEvents(new GameListener(), this);
 
         gameProcessor = new AutoGameProcessor();
         gameProcessor.start();
+        PlaceholderAPI.registerHook();
     }
 
     @Override
     public void onDisable() {
+        if (database != null) {
+            gameService.shutdown();
+            database.close();
+        }
+
         if (gameProcessor != null) gameProcessor.stop();
     }
 
@@ -77,5 +95,19 @@ public final class FyreChatGame extends ZapperJavaPlugin {
                 DumperSettings.DEFAULT,
                 updaterSettings
         );
+    }
+
+    private void initializeDatabase() {
+        try {
+            LoggerUtils.info("### Connecting to database... ###");
+
+            DatabaseConfig databaseConfig = DatabaseConfig.fromSection(getConfiguration().getSection("database"));
+            database = new Database(databaseConfig);
+            gameService = new GameService(database);
+
+            LoggerUtils.info("### Database connected successfully! ###");
+        } catch (Exception exception) {
+            LoggerUtils.error(exception.getMessage());
+        }
     }
 }

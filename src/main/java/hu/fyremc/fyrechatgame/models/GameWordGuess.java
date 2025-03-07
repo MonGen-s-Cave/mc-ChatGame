@@ -6,6 +6,7 @@ import hu.fyremc.fyrechatgame.handler.GameHandler;
 import hu.fyremc.fyrechatgame.identifiers.GameState;
 import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
 import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
+import hu.fyremc.fyrechatgame.services.MainThreadExecutorService;
 import hu.fyremc.fyrechatgame.utils.GameUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -16,9 +17,10 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameWordGuess extends GameHandler {
+    private final ThreadLocalRandom random = ThreadLocalRandom.current();
     private MyScheduledTask timeoutTask;
     private String originalWord;
-    private final ThreadLocalRandom random = ThreadLocalRandom.current();
+    private long startTime;
 
     @Override
     public void start() {
@@ -31,6 +33,7 @@ public class GameWordGuess extends GameHandler {
         String scrambled = scrambleWord(originalWord);
         this.state = GameState.ACTIVE;
         this.gameData = scrambled;
+        this.startTime = System.currentTimeMillis();
 
         announceScrambled(scrambled);
         scheduleTimeout();
@@ -72,9 +75,19 @@ public class GameWordGuess extends GameHandler {
         if (state != GameState.ACTIVE) return;
 
         if (answer.trim().equalsIgnoreCase(originalWord)) {
-            GameUtils.rewardPlayer(player);
-            GameUtils.broadcast(MessageKeys.WORD_GUESSER_WIN.getMessage().replace("{player}", player.getName()));
-            cleanup();
+            long endTime = System.currentTimeMillis();
+            double timeTaken = (endTime - startTime) / 1000.0;
+            String formattedTime = String.format("%.2f", timeTaken);
+
+            FyreChatGame.getInstance().getGameService().incrementWin(player)
+                    .thenCompose(v -> FyreChatGame.getInstance().getGameService().setTime(player, timeTaken))
+                    .thenAcceptAsync(v -> {
+                        GameUtils.rewardPlayer(player);
+                        GameUtils.broadcast(MessageKeys.WORD_GUESSER_WIN.getMessage()
+                                .replace("{player}", player.getName())
+                                .replace("{time}", formattedTime));
+                        cleanup();
+                    }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
         }
     }
 }

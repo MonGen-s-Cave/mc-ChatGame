@@ -15,15 +15,18 @@ repositories {
     maven("https://oss.sonatype.org/content/groups/public/")
     maven("https://jitpack.io")
     maven("https://repo.artillex-studios.com/releases")
+    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 }
 
 dependencies {
     implementation("com.artillexstudios.axapi:axapi:1.4.513:all")
 
     zap("com.github.Anon8281:UniversalScheduler:0.1.6")
+    zap("org.mongodb:mongodb-driver-sync:5.4.0-alpha0")
 
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
     compileOnly("org.projectlombok:lombok:1.18.36")
+    compileOnly("me.clip:placeholderapi:2.11.6")
 }
 
 java {

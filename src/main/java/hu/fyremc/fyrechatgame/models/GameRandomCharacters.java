@@ -6,6 +6,7 @@ import hu.fyremc.fyrechatgame.handler.GameHandler;
 import hu.fyremc.fyrechatgame.identifiers.GameState;
 import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
 import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
+import hu.fyremc.fyrechatgame.services.MainThreadExecutorService;
 import hu.fyremc.fyrechatgame.utils.GameUtils;
 
 import org.bukkit.entity.Player;
@@ -14,10 +15,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameRandomCharacters extends GameHandler {
-    private MyScheduledTask timeoutTask;
-    private String targetSequence;
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
     private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+    private MyScheduledTask timeoutTask;
+    private String targetSequence;
+    private long startTime;
 
     @Override
     public void start() {
@@ -26,6 +28,7 @@ public class GameRandomCharacters extends GameHandler {
         this.targetSequence = generateSequence();
         this.state = GameState.ACTIVE;
         this.gameData = targetSequence;
+        this.startTime = System.currentTimeMillis();
 
         announceGame();
         scheduleTimeout();
@@ -67,9 +70,19 @@ public class GameRandomCharacters extends GameHandler {
         if (state != GameState.ACTIVE) return;
 
         if (answer.equals(targetSequence)) {
-            GameUtils.rewardPlayer(player);
-            GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_WIN.getMessage().replace("{player}", player.getName()));
-            cleanup();
+            long endTime = System.currentTimeMillis();
+            double timeTaken = (endTime - startTime) / 1000.0;
+            String formattedTime = String.format("%.2f", timeTaken);
+
+            FyreChatGame.getInstance().getGameService().incrementWin(player)
+                    .thenCompose(v -> FyreChatGame.getInstance().getGameService().setTime(player, timeTaken))
+                    .thenAcceptAsync(v -> {
+                        GameUtils.rewardPlayer(player);
+                        GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_WIN.getMessage()
+                                .replace("{player}", player.getName())
+                                .replace("{time}", formattedTime));
+                        cleanup();
+                    }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
         }
     }
 }
