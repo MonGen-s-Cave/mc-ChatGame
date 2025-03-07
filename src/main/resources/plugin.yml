@@ -1,0 +1,5 @@
+name: FyreChatGame
+version: '1.0.0'
+main: hu.fyremc.fyrechatgame.FyreChatGame
+api-version: '1.21'
+authors: [ coma112 ]

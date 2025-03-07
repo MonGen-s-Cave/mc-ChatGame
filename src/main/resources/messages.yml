@@ -1,0 +1,16 @@
+prefix: "&8[&4&lFyre&6&lMC&8] »"
+
+messages:
+  reload: "%prefix% caSikeresen újratöltötted a fájlokat!"
+  no-permission: "%prefix% &cNincsen ehhez jogod!"
+  math-game: "%prefix% &aSzámoljunk egy kicsit! &2{problem}"
+  who-am-i: "%prefix% &a{question}"
+  word-stop: "%prefix% &aTaláld ki a mobot a kezdőbetűből: &2{character}"
+  word-guesser: "%prefix% &aTaláld ki ezt a szót: &2{word}"
+  copy: "%prefix% &aMásold le ezt: &2{random}"
+  math-game-win: "%prefix% &2{player} &asikeresen megoldotta a problémát! &7#MATEMATIKUS"
+  who-am-i-win: "%prefix% &2{player} &asikeresen kitalálta, hogy ki is vagyok én :O"
+  word-stop-win: "%prefix% &2{player} &asikeresen kitalálta, hogy melyik mobra gondoltam!"
+  word-guesser-win: "%prefix% &2{player} &asikeresen kitalálta a szót!"
+  copy-win: "%prefix% &2{player} &asikeresen lemásolta a szót &2{time}&amp alatt!"
+  math-game-no-win: "%prefix% &cSenki sem találta ki a matematikai problémát!"
