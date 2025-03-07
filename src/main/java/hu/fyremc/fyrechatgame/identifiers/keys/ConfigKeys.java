@@ -10,8 +10,8 @@ import java.util.List;
 
 @Getter
 public enum ConfigKeys {
-    ALIASES("aliases"),
     REWARDS("rewards"),
+    TIME_BETWEEN_GAMES("time-between-games"),
 
     MATH_TIME("math.time"),
     MATH_PROBLEMS("math.problems"),
@@ -26,7 +26,13 @@ public enum ConfigKeys {
     WORD_GUESSER_WORDS("word-guesser.words"),
 
     RANDOM_CHARACTERS_TIME("random-characters.time"),
-    RANDOM_CHARACTERS_LENGTH("random-characters.length");
+    RANDOM_CHARACTERS_LENGTH("random-characters.length"),
+
+    REVERSE_TIME("reverse.time"),
+    REVERSE_WORDS("reverse.words"),
+
+    FILL_OUT_TIME("fill-out.time"),
+    FILL_OUT_WORDS("fill-out.words");
 
     private final String path;
     private static final Config config = FyreChatGame.getInstance().getConfiguration();

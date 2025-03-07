@@ -5,11 +5,12 @@ import hu.fyremc.fyrechatgame.FyreChatGame;
 import hu.fyremc.fyrechatgame.handler.GameHandler;
 import hu.fyremc.fyrechatgame.identifiers.GameState;
 import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
-import org.bukkit.Bukkit;
+import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
+import hu.fyremc.fyrechatgame.utils.GameUtils;
+
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameRandomCharacters extends GameHandler {
@@ -30,6 +31,7 @@ public class GameRandomCharacters extends GameHandler {
         scheduleTimeout();
     }
 
+    @NotNull
     private String generateSequence() {
         int length = ConfigKeys.RANDOM_CHARACTERS_LENGTH.getInt();
         StringBuilder sb = new StringBuilder(length);
@@ -37,19 +39,18 @@ public class GameRandomCharacters extends GameHandler {
         for (int i = 0; i < length; i++) {
             sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
         }
+
         return sb.toString();
     }
 
     private void announceGame() {
-        Bukkit.getOnlinePlayers().forEach(p ->
-                p.sendMessage("§6§lRANDOM CODE §7» §eMásold le ezt: §b" + targetSequence)
-        );
+        GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS.getMessage().replace("{word}", targetSequence));
     }
 
     private void scheduleTimeout() {
         timeoutTask = FyreChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
-                Bukkit.broadcastMessage("§cIdő lejárt! Senki nem másolta le: §e" + targetSequence);
+                GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_NO_WIN.getMessage());
                 cleanup();
             }
         }, ConfigKeys.RANDOM_CHARACTERS_TIME.getInt() * 20L);
@@ -66,18 +67,9 @@ public class GameRandomCharacters extends GameHandler {
         if (state != GameState.ACTIVE) return;
 
         if (answer.equals(targetSequence)) {
-            rewardPlayer(player);
-            Bukkit.broadcastMessage("§a" + player.getName() + " §7pontosan másolta a kódot!");
+            GameUtils.rewardPlayer(player);
+            GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_WIN.getMessage().replace("{player}", player.getName()));
             cleanup();
         }
-    }
-
-    private void rewardPlayer(@NotNull Player winner) {
-        List<String> rewards = ConfigKeys.REWARDS.getList();
-        if (rewards.isEmpty()) return;
-
-        String command = rewards.get(random.nextInt(rewards.size())).replace("{player}", winner.getName());
-
-        Bukkit.getScheduler().runTask(FyreChatGame.getInstance(), () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command));
     }
 }

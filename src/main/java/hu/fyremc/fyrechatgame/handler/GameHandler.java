@@ -1,6 +1,7 @@
 package hu.fyremc.fyrechatgame.handler;
 
 import hu.fyremc.fyrechatgame.identifiers.GameState;
+import hu.fyremc.fyrechatgame.manager.GameManager;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -16,5 +17,6 @@ public abstract class GameHandler {
     protected void cleanup() {
         state = GameState.INACTIVE;
         gameData = null;
+        GameManager.removeInactiveGames();
     }
 }

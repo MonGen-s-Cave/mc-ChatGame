@@ -8,54 +8,66 @@ import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
 import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
 import hu.fyremc.fyrechatgame.utils.GameUtils;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class GameWhoAmI extends GameHandler {
+public class GameFillOut extends GameHandler {
     private MyScheduledTask timeoutTask;
-    private String correctAnswer;
+    private String originalWord;
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        List<String> words = ConfigKeys.WHO_AM_I_WORDS.getList();
+        List<String> words = ConfigKeys.FILL_OUT_WORDS.getList();
         if (words.isEmpty()) return;
 
-        String[] data = parseWord(words.get(random.nextInt(words.size())));
-        if (data == null) return;
-
-        this.correctAnswer = data[1];
+        this.originalWord = words.get(random.nextInt(words.size())).trim();
+        String filled = generateFillOut(originalWord);
         this.state = GameState.ACTIVE;
-        this.gameData = data[0];
+        this.gameData = filled;
 
-        announceClue();
+        announceFillOut(filled);
         scheduleTimeout();
     }
 
-    @Nullable
-    private String[] parseWord(@NotNull String raw) {
-        String[] parts = raw.split("=", 2);
-        if (parts.length != 2) return null;
-        return new String[]{parts[0].trim(), parts[1].trim()};
+    @NotNull
+    @Contract("_ -> new")
+    private String generateFillOut(@NotNull String word) {
+        int length = word.length();
+        int replaceCount = Math.max(1, (int) Math.ceil(length / 2.0));
+
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < length; i++) indices.add(i);
+        Collections.shuffle(indices);
+
+        indices = indices.subList(0, replaceCount);
+        char[] chars = word.toCharArray();
+
+        for (int index : indices) {
+            chars[index] = '_';
+        }
+
+        return new String(chars);
     }
 
-    private void announceClue() {
-        String clue = (String) gameData;
-        GameUtils.broadcast(MessageKeys.WHO_AM_I.getMessage().replace("{question}", clue));
+    private void announceFillOut(@NotNull String filled) {
+        GameUtils.broadcast(MessageKeys.FILL_OUT.getMessage().replace("{word}", filled));
     }
 
     private void scheduleTimeout() {
         timeoutTask = FyreChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
-                GameUtils.broadcast(MessageKeys.WHO_AM_I_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage());
                 cleanup();
             }
-        }, ConfigKeys.WHO_AM_I_TIME.getInt() * 20L);
+        }, ConfigKeys.FILL_OUT_TIME.getInt() * 20L);
     }
 
     @Override
@@ -68,9 +80,9 @@ public class GameWhoAmI extends GameHandler {
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
         if (state != GameState.ACTIVE) return;
 
-        if (answer.trim().equalsIgnoreCase(correctAnswer)) {
+        if (answer.trim().equalsIgnoreCase(originalWord)) {
             GameUtils.rewardPlayer(player);
-            GameUtils.broadcast(MessageKeys.WHO_AM_I_WIN.getMessage().replace("{player}", player.getName()));
+            GameUtils.broadcast(MessageKeys.FILL_OUT_WIN.getMessage().replace("{player}", player.getName()));
             cleanup();
         }
     }

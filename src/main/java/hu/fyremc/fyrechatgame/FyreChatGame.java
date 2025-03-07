@@ -3,7 +3,7 @@ package hu.fyremc.fyrechatgame;
 import com.artillexstudios.axapi.config.Config;
 import com.github.Anon8281.universalScheduler.UniversalScheduler;
 import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
-import hu.fyremc.fyrechatgame.listeners.GameListener;
+import hu.fyremc.fyrechatgame.listener.GameListener;
 import hu.fyremc.fyrechatgame.processor.AutoGameProcessor;
 import lombok.Getter;
 import org.jetbrains.annotations.Contract;

@@ -7,56 +7,44 @@ import hu.fyremc.fyrechatgame.identifiers.GameState;
 import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
 import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
 import hu.fyremc.fyrechatgame.utils.GameUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class GameMath extends GameHandler {
+public class GameReverse extends GameHandler {
     private MyScheduledTask timeoutTask;
-    private String correctAnswer;
+    private String originalWord;
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        List<String> problems = ConfigKeys.MATH_PROBLEMS.getList();
-        if (problems.isEmpty()) return;
+        List<String> words = ConfigKeys.REVERSE_WORDS.getList();
+        if (words.isEmpty()) return;
 
-        String[] problemData = parseProblem(problems.get(random.nextInt(problems.size())));
-        if (problemData == null) return;
-
-        this.correctAnswer = problemData[1];
+        this.originalWord = words.get(random.nextInt(words.size())).trim();
+        String reversed = new StringBuilder(originalWord).reverse().toString();
         this.state = GameState.ACTIVE;
-        this.gameData = problemData[0];
+        this.gameData = reversed;
 
-        announceProblem();
+        announceReversed(reversed);
         scheduleTimeout();
     }
 
-    @Nullable
-    private String[] parseProblem(@NotNull String raw) {
-        String[] parts = raw.split("=", 2);
-        if (parts.length != 2) return null;
-        return new String[]{parts[0].trim(), parts[1].trim()};
-    }
-
-    private void announceProblem() {
-        String question = (String) gameData;
-        GameUtils.broadcast(MessageKeys.MATH_GAME.getMessage().replace("{problem}", question));
+    private void announceReversed(@NotNull String reversed) {
+        GameUtils.broadcast(MessageKeys.REVERSE.getMessage().replace("{word}", reversed));
     }
 
     private void scheduleTimeout() {
         timeoutTask = FyreChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
-                GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage());
+                GameUtils.broadcast(MessageKeys.REVERSE_NO_WIN.getMessage());
                 cleanup();
             }
-        }, ConfigKeys.MATH_TIME.getInt() * 20L);
+        }, ConfigKeys.REVERSE_TIME.getInt() * 20L);
     }
 
     @Override
@@ -69,9 +57,9 @@ public final class GameMath extends GameHandler {
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
         if (state != GameState.ACTIVE) return;
 
-        if (answer.trim().equalsIgnoreCase(correctAnswer)) {
+        if (answer.trim().equalsIgnoreCase(originalWord)) {
             GameUtils.rewardPlayer(player);
-            GameUtils.broadcast(MessageKeys.MATH_GAME_WIN.getMessage().replace("{player}", player.getName()));
+            GameUtils.broadcast(MessageKeys.REVERSE_WIN.getMessage().replace("{player}", player.getName()));
             cleanup();
         }
     }

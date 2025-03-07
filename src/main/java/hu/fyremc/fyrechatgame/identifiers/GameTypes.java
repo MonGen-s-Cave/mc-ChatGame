@@ -5,5 +5,7 @@ public enum GameTypes {
     WHO_AM_I,
     WORD_GUESSER,
     RANDOM_CHARACTERS,
-    WORD_STOP
+    WORD_STOP,
+    FILL_OUT,
+    REVERSE
 }

@@ -3,8 +3,13 @@ package hu.fyremc.fyrechatgame.manager;
 import hu.fyremc.fyrechatgame.handler.GameHandler;
 import hu.fyremc.fyrechatgame.identifiers.GameState;
 import hu.fyremc.fyrechatgame.identifiers.GameTypes;
+import hu.fyremc.fyrechatgame.models.GameFillOut;
 import hu.fyremc.fyrechatgame.models.GameMath;
 import hu.fyremc.fyrechatgame.models.GameRandomCharacters;
+import hu.fyremc.fyrechatgame.models.GameReverse;
+import hu.fyremc.fyrechatgame.models.GameWhoAmI;
+import hu.fyremc.fyrechatgame.models.GameWordGuess;
+import hu.fyremc.fyrechatgame.models.GameWordStop;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,10 +24,12 @@ public class GameManager {
 
         GameHandler handler = switch (type) {
             case MATH -> new GameMath();
-            case WHO_AM_I -> null;
-            case WORD_GUESSER -> null;
+            case WHO_AM_I -> new GameWhoAmI();
+            case WORD_GUESSER -> new GameWordGuess();
             case RANDOM_CHARACTERS -> new GameRandomCharacters();
-            case WORD_STOP -> null;
+            case WORD_STOP -> new GameWordStop();
+            case REVERSE -> new GameReverse();
+            case FILL_OUT -> new GameFillOut();
         };
 
         handler.start();
@@ -37,19 +44,15 @@ public class GameManager {
         });
     }
 
-    public static void stopGame(@NotNull GameTypes type) {
-        GameHandler handler = ACTIVE_GAMES.remove(type);
-
-        if (handler != null) handler.stop();
-    }
-
     public static int getActiveGameCount() {
         return (int) ACTIVE_GAMES.values().stream()
                 .filter(handler -> handler.getState() == GameState.ACTIVE)
                 .count();
     }
 
-    public static boolean isGameTypeActive(GameTypes type) {
-        return ACTIVE_GAMES.containsKey(type) && ACTIVE_GAMES.get(type).getState() == GameState.ACTIVE;
+    public static void removeInactiveGames() {
+        ACTIVE_GAMES.entrySet().removeIf(entry ->
+                entry.getValue().getState() == GameState.INACTIVE
+        );
     }
 }

@@ -1,12 +1,9 @@
-aliases:
-  - "fyrechatgame"
-  - "chatgame"
-  - "cg"
-
 rewards:
   - "give {player} diamond_block 3"
   - "give {player} diamond_sword 1"
   - "give {player} apple 5"
+
+time-between-games: 21
 
 random-characters:
   time: 10
@@ -181,7 +178,17 @@ word-guesser:
     - "Répa"
     - "Sas"
 
+reverse:
+  time: 10
+  words:
+    - "Kő"
+    - "FyreMC"
+    - "Koma"
 
-
+fill-out:
+  time: 10
+  words:
+    - "Redstone"
+    - "FyreMC"
 
 
