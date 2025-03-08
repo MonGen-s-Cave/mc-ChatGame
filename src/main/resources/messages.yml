@@ -1,6 +1,8 @@
 prefix: "&8[&4&lFyre&6&lMC&8] »"
 
 messages:
+  reload: "%prefix% &aSikeresen újratöltötted a fájlokat!"
+  no-permission: "%prefix% &cNincsen ehhez jogod!"
   math-game: "%prefix% &fSzámold ki: &e{problem}"
   who-am-i: "%prefix% &6&lKi vagyok én? &f{question}"
   word-stop: "%prefix% &fTaláld ki a mobot a kezdőbetűből: &6&l{character}"

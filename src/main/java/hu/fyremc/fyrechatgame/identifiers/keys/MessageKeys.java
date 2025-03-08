@@ -10,6 +10,9 @@ import java.util.List;
 
 @Getter
 public enum MessageKeys {
+    RELOAD("messages.reload"),
+    NO_PERMISSION("messages.no-permission"),
+
     MATH_GAME("messages.math-game"),
     WHO_AM_I("messages.who-am-i"),
     WORD_STOP("messages.word-stop"),

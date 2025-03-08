@@ -11,6 +11,7 @@ import hu.fyremc.fyrechatgame.processor.AutoGameProcessor;
 import hu.fyremc.fyrechatgame.services.GameService;
 import hu.fyremc.fyrechatgame.services.MainThreadExecutorService;
 import hu.fyremc.fyrechatgame.utils.LoggerUtils;
+import hu.fyremc.fyrechatgame.utils.RegisterUtils;
 import lombok.Getter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -49,8 +50,10 @@ public final class FyreChatGame extends ZapperJavaPlugin {
         getServer().getPluginManager().registerEvents(new GameListener(), this);
 
         gameProcessor = new AutoGameProcessor();
+
         gameProcessor.start();
         PlaceholderAPI.registerHook();
+        RegisterUtils.registerCommands();
     }
 
     @Override

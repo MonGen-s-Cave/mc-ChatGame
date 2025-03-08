@@ -1,10 +1,15 @@
+aliases:
+  - "cg"
+  - "chatgame"
+  - "fyrechatgame"
+
 rewards:
   - "eco give {player} 2500"
   - "eco give {player} 5000"
   - "crates key give {player} honey 1"
   - "crates key give {player} copper 1"
 
-time-between-games: 61 # 300
+time-between-games: 300
 
 random-characters:
   time: 60

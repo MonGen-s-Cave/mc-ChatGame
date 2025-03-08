@@ -10,6 +10,7 @@ import java.util.List;
 
 @Getter
 public enum ConfigKeys {
+    ALIASES("aliases"),
     REWARDS("rewards"),
     TIME_BETWEEN_GAMES("time-between-games"),
 
