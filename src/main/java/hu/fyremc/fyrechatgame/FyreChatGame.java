@@ -1,8 +1,7 @@
 package hu.fyremc.fyrechatgame;
 
 import com.artillexstudios.axapi.config.Config;
-import com.github.Anon8281.universalScheduler.UniversalScheduler;
-import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
+import com.artillexstudios.axapi.scheduler.impl.BukkitScheduler;
 import hu.fyremc.fyrechatgame.database.Database;
 import hu.fyremc.fyrechatgame.database.DatabaseConfig;
 import hu.fyremc.fyrechatgame.hooks.plugins.PlaceholderAPI;
@@ -26,18 +25,18 @@ import java.util.concurrent.Executor;
 
 public final class FyreChatGame extends ZapperJavaPlugin {
     @Getter static FyreChatGame instance;
-    @Getter TaskScheduler scheduler;
+    @Getter BukkitScheduler scheduler;
     @Getter Config language;
     @Getter Database database;
     @Getter GameService gameService;
     @Getter Executor mainThreadExecutor;
+    @Getter AutoGameProcessor gameProcessor;
     Config config;
-    AutoGameProcessor gameProcessor;
 
     @Override
     public void onLoad() {
         instance = this;
-        scheduler = UniversalScheduler.getScheduler(this);
+        scheduler = new BukkitScheduler(this);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package hu.fyremc.fyrechatgame.processor;
 
-import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
+import com.artillexstudios.axapi.scheduler.ScheduledTask;
 import hu.fyremc.fyrechatgame.FyreChatGame;
 import hu.fyremc.fyrechatgame.identifiers.GameTypes;
 import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
@@ -20,7 +20,7 @@ public class AutoGameProcessor {
             GameTypes.FILL_OUT
     );
 
-    private MyScheduledTask task;
+    private ScheduledTask task;
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
     public void start() {
@@ -33,24 +33,28 @@ public class AutoGameProcessor {
     }
 
     private void stopExistingTask() {
-        if (task != null && !task.isCancelled()) {
-            task.cancel();
-        }
+        if (task != null && !task.isCancelled()) task.cancel();
     }
 
     private void scheduleNewTask() {
-        long intervalTicks = ConfigKeys.TIME_BETWEEN_GAMES.getInt() * 20L;
-        task = FyreChatGame.getInstance().getScheduler().runTaskTimer(
-                this::tryStartGame,
-                intervalTicks,
-                intervalTicks
-        );
+        stopExistingTask();
+
+        long checkIntervalTicks = 20;
+
+        task = FyreChatGame.getInstance().getScheduler().runLater(this::checkAndStartGame, checkIntervalTicks);
     }
 
-    private void tryStartGame() {
+    private void checkAndStartGame() {
+        int activeGames = GameManager.getActiveGameCount();
+        long currentTime = System.currentTimeMillis();
+        long lastGameEnd = GameManager.getLastGameEndTime();
+        long cooldownPeriod = ConfigKeys.TIME_BETWEEN_GAMES.getInt() * 1000L;
+
         GameManager.removeInactiveGames();
 
-        if (GameManager.getActiveGameCount() == 0) startRandomGame();
+        if (activeGames == 0 && (lastGameEnd == 0 || currentTime - lastGameEnd >= cooldownPeriod)) startRandomGame();
+
+        scheduleNewTask();
     }
 
     private void startRandomGame() {

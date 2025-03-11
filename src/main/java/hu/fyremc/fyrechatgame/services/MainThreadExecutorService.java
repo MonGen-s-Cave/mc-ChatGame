@@ -31,7 +31,7 @@ public class MainThreadExecutorService {
                     LoggerUtils.error(exception.getMessage());
                 }
             } else {
-                FyreChatGame.getInstance().getScheduler().runTask(() -> {
+                FyreChatGame.getInstance().getScheduler().run(() -> {
                     try {
                         command.run();
                     } catch (Exception exception) {

@@ -1,11 +1,12 @@
 package hu.fyremc.fyrechatgame.models;
 
-import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
+import com.artillexstudios.axapi.scheduler.ScheduledTask;
 import hu.fyremc.fyrechatgame.FyreChatGame;
 import hu.fyremc.fyrechatgame.handler.GameHandler;
 import hu.fyremc.fyrechatgame.identifiers.GameState;
 import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
 import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
+import hu.fyremc.fyrechatgame.processor.AutoGameProcessor;
 import hu.fyremc.fyrechatgame.services.MainThreadExecutorService;
 import hu.fyremc.fyrechatgame.utils.GameUtils;
 import org.bukkit.entity.Player;
@@ -19,8 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class GameFillOut extends GameHandler {
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
-    private MyScheduledTask timeoutTask;
-    private String originalWord;
+    private ScheduledTask timeoutTask;
     private long startTime;
 
     @Override
@@ -30,7 +30,7 @@ public class GameFillOut extends GameHandler {
         List<String> words = ConfigKeys.FILL_OUT_WORDS.getList();
         if (words.isEmpty()) return;
 
-        this.originalWord = words.get(random.nextInt(words.size())).trim();
+        String originalWord = words.get(random.nextInt(words.size())).trim();
         String filled = generateFillOut(originalWord);
         this.state = GameState.ACTIVE;
         this.gameData = filled;
@@ -65,7 +65,7 @@ public class GameFillOut extends GameHandler {
     }
 
     private void scheduleTimeout() {
-        timeoutTask = FyreChatGame.getInstance().getScheduler().runTaskLater(() -> {
+        timeoutTask = FyreChatGame.getInstance().getScheduler().runLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage());
                 cleanup();
@@ -77,6 +77,9 @@ public class GameFillOut extends GameHandler {
     public void stop() {
         if (timeoutTask != null) timeoutTask.cancel();
         cleanup();
+
+        AutoGameProcessor gameProcessor = FyreChatGame.getInstance().getGameProcessor();
+        gameProcessor.start();
     }
 
     @Override

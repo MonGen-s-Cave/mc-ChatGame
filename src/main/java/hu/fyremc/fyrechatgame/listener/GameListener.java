@@ -15,15 +15,13 @@ public class GameListener implements Listener {
     @EventHandler
     public void onChat(final @NotNull AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        String message = event.getMessage().trim();
+        String message = event.getMessage();
         GameService service = FyreChatGame.getInstance().getGameService();
 
         service.exists(player).thenAccept(exists -> {
             if (!exists) service.createPlayer(player);
         });
 
-        Bukkit.getScheduler().runTask(FyreChatGame.getInstance(), () ->
-                GameManager.handleAnswer(player, message)
-        );
+        Bukkit.getScheduler().runTask(FyreChatGame.getInstance(), () -> GameManager.handleAnswer(player, message));
     }
 }

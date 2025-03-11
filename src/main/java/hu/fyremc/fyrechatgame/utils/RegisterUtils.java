@@ -18,7 +18,6 @@ public class RegisterUtils {
 
         BukkitCommandHandler handler = BukkitCommandHandler.create(FyreChatGame.getInstance());
 
-
         handler.getTranslator().add(new ErrorHandler());
         handler.setLocale(new Locale("en", "US"));
         handler.register(Orphans.path(ConfigKeys.ALIASES.getList().toArray(String[]::new)).handler(new CommandChat()));

@@ -10,6 +10,7 @@ import hu.fyremc.fyrechatgame.models.GameReverse;
 import hu.fyremc.fyrechatgame.models.GameWhoAmI;
 import hu.fyremc.fyrechatgame.models.GameWordGuess;
 import hu.fyremc.fyrechatgame.models.GameWordStop;
+import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,6 +19,7 @@ import java.util.Map;
 
 public class GameManager {
     private static final Map<GameTypes, GameHandler> ACTIVE_GAMES = new EnumMap<>(GameTypes.class);
+    @Getter private static long lastGameEndTime = 0;
 
     public static void startGame(@NotNull GameTypes type) {
         if (ACTIVE_GAMES.containsKey(type)) return;
@@ -49,6 +51,13 @@ public class GameManager {
     }
 
     public static void removeInactiveGames() {
+        for (Map.Entry<GameTypes, GameHandler> entry : ACTIVE_GAMES.entrySet()) {
+            if (entry.getValue().getState() == GameState.INACTIVE) {
+                lastGameEndTime = System.currentTimeMillis();
+                break;
+            }
+        }
+
         ACTIVE_GAMES.entrySet().removeIf(entry -> entry.getValue().getState() == GameState.INACTIVE);
     }
 }

@@ -1,12 +1,15 @@
 package hu.fyremc.fyrechatgame.identifiers.keys;
 
 import com.artillexstudios.axapi.config.Config;
+import com.artillexstudios.axapi.utils.StringUtils;
 import hu.fyremc.fyrechatgame.FyreChatGame;
 import hu.fyremc.fyrechatgame.processor.MessageProcessor;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 public enum MessageKeys {

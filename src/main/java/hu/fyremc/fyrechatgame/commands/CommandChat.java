@@ -2,7 +2,6 @@ package hu.fyremc.fyrechatgame.commands;
 
 import hu.fyremc.fyrechatgame.FyreChatGame;
 import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
-import hu.fyremc.fyrechatgame.manager.GameManager;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import revxrsal.commands.annotation.Subcommand;

@@ -1,11 +1,12 @@
 package hu.fyremc.fyrechatgame.models;
 
-import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
+import com.artillexstudios.axapi.scheduler.ScheduledTask;
 import hu.fyremc.fyrechatgame.FyreChatGame;
 import hu.fyremc.fyrechatgame.handler.GameHandler;
 import hu.fyremc.fyrechatgame.identifiers.GameState;
 import hu.fyremc.fyrechatgame.identifiers.keys.ConfigKeys;
 import hu.fyremc.fyrechatgame.identifiers.keys.MessageKeys;
+import hu.fyremc.fyrechatgame.processor.AutoGameProcessor;
 import hu.fyremc.fyrechatgame.services.MainThreadExecutorService;
 import hu.fyremc.fyrechatgame.utils.GameUtils;
 import org.bukkit.entity.Player;
@@ -16,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class GameReverse extends GameHandler {
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
-    private MyScheduledTask timeoutTask;
+    private ScheduledTask timeoutTask;
     private String originalWord;
     private long startTime;
 
@@ -42,7 +43,7 @@ public class GameReverse extends GameHandler {
     }
 
     private void scheduleTimeout() {
-        timeoutTask = FyreChatGame.getInstance().getScheduler().runTaskLater(() -> {
+        timeoutTask = FyreChatGame.getInstance().getScheduler().runLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.REVERSE_NO_WIN.getMessage());
                 cleanup();
@@ -54,6 +55,9 @@ public class GameReverse extends GameHandler {
     public void stop() {
         if (timeoutTask != null) timeoutTask.cancel();
         cleanup();
+
+        AutoGameProcessor gameProcessor = FyreChatGame.getInstance().getGameProcessor();
+        gameProcessor.start();
     }
 
     @Override
