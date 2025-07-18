@@ -1,0 +1,5 @@
+https://repo.maven.apache.org/maven2/
+https://repo.papermc.io/repository/maven-public/
+https://oss.sonatype.org/content/groups/public/
+https://jitpack.io
+https://repo.extendedclip.com/content/repositories/placeholderapi/
