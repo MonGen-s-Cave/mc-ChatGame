@@ -91,7 +91,7 @@ public final class GameMath extends GameHandler {
 
     private void announceProblem() {
         String question = (String) gameData;
-        GameUtils.broadcastMessages(MessageKeys.MATH_GAME, "{problem}", question);
+        GameUtils.broadcastMessages(MessageKeys.MATH_GAME, "{equation}", question);
     }
 
     private void scheduleTimeout() {

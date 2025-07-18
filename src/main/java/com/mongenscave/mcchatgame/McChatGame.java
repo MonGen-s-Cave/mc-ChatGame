@@ -18,6 +18,7 @@ import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
 import dev.dejvokep.boostedyaml.settings.loader.LoaderSettings;
 import dev.dejvokep.boostedyaml.settings.updater.UpdaterSettings;
 import lombok.Getter;
+import org.bstats.bukkit.Metrics;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import revxrsal.zapper.ZapperJavaPlugin;
@@ -55,6 +56,7 @@ public final class McChatGame extends ZapperJavaPlugin {
         PlaceholderAPI.registerHook();
         RegisterUtils.registerCommands();
 
+        new Metrics(this, 26553);
         LoggerUtils.printStartup();
     }
 

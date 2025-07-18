@@ -29,6 +29,7 @@ dependencies {
 
     zap("mysql:mysql-connector-java:8.0.33")
     zap("com.zaxxer:HikariCP:6.2.1")
+    zap("org.bstats:bstats-bukkit:3.0.2")
     zap("io.github.revxrsal:lamp.common:4.0.0-rc.12")
     zap("io.github.revxrsal:lamp.brigadier:4.0.0-rc.12")
     zap("com.github.Anon8281:UniversalScheduler:0.1.6")
@@ -52,6 +53,7 @@ zapper {
 
     repositories { includeProjectRepositories() }
 
+    relocate("org.bstats", "bstats")
     relocate("com.github.Anon8281.universalScheduler", "universalScheduler")
     relocate("dev.dejvokep.boostedyaml", "boostedyaml")
 }
