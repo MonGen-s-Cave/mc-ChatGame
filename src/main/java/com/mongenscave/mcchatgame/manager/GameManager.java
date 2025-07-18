@@ -1,7 +1,7 @@
 package com.mongenscave.mcchatgame.manager;
 
 import com.mongenscave.mcchatgame.identifiers.GameState;
-import com.mongenscave.mcchatgame.identifiers.GameTypes;
+import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.models.impl.GameFillOut;
 import com.mongenscave.mcchatgame.models.impl.GameMath;
@@ -15,13 +15,14 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 public class GameManager {
-    private static final Map<GameTypes, GameHandler> ACTIVE_GAMES = new EnumMap<>(GameTypes.class);
+    private static final Map<GameType, GameHandler> ACTIVE_GAMES = new EnumMap<>(GameType.class);
     @Getter private static long lastGameEndTime = 0;
 
-    public static void startGame(@NotNull GameTypes type) {
+    public static void startGame(@NotNull GameType type) {
         if (ACTIVE_GAMES.containsKey(type)) return;
 
         GameHandler handler = switch (type) {
@@ -51,7 +52,7 @@ public class GameManager {
     }
 
     public static void removeInactiveGames() {
-        for (Map.Entry<GameTypes, GameHandler> entry : ACTIVE_GAMES.entrySet()) {
+        for (Map.Entry<GameType, GameHandler> entry : ACTIVE_GAMES.entrySet()) {
             if (entry.getValue().getState() == GameState.INACTIVE) {
                 lastGameEndTime = System.currentTimeMillis();
                 break;
@@ -59,5 +60,11 @@ public class GameManager {
         }
 
         ACTIVE_GAMES.entrySet().removeIf(entry -> entry.getValue().getState() == GameState.INACTIVE);
+    }
+
+    public static List<GameHandler> getActiveGame() {
+        return ACTIVE_GAMES.values().stream()
+                .filter(game -> game.getState() == GameState.ACTIVE)
+                .toList();
     }
 }

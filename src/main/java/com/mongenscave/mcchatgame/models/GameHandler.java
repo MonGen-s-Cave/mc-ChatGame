@@ -5,10 +5,13 @@ import com.mongenscave.mcchatgame.manager.GameManager;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class GameHandler {
     @Getter protected GameState state = GameState.INACTIVE;
     protected Object gameData;
+
+    private static GameHandler currentActivaGame = null;
 
     public abstract void start();
     public abstract void stop();
@@ -17,6 +20,26 @@ public abstract class GameHandler {
     protected void cleanup() {
         state = GameState.INACTIVE;
         gameData = null;
+
+        if (currentActivaGame == this) currentActivaGame = null;
+
         GameManager.removeInactiveGames();
     }
+
+    protected void setAsActive() {
+        currentActivaGame = this;
+        state = GameState.ACTIVE;
+    }
+
+    @Nullable
+    public static GameHandler getCurrentActiveGame() {
+        return currentActivaGame;
+    }
+
+    @Nullable
+    public String getGameData() {
+        return gameData != null ? gameData.toString() : null;
+    }
+
+    public abstract long getStartTime();
 }

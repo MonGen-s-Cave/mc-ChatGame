@@ -9,6 +9,8 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.PlayerUtils;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,13 +34,53 @@ public class GameWhoAmI extends GameHandler {
         String[] data = parseWord(words.get(random.nextInt(words.size())));
         if (data == null) return;
 
+        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
+
         this.correctAnswer = data[1];
-        this.state = GameState.ACTIVE;
         this.gameData = data[0];
         startTime = System.currentTimeMillis();
+        this.setAsActive();
 
         announceClue();
         scheduleTimeout();
+    }
+
+    @Override
+    public void stop() {
+        if (timeoutTask != null) timeoutTask.cancel();
+        cleanup();
+
+        AutoGameProcessor gameProcessor = McChatGame.getInstance().getGameProcessor();
+        gameProcessor.start();
+    }
+
+    @Override
+    public long getStartTime() {
+        return startTime;
+    }
+
+    @Override
+    public void handleAnswer(@NotNull Player player, @NotNull String answer) {
+        if (state != GameState.ACTIVE) return;
+
+        if (answer.trim().equalsIgnoreCase(correctAnswer)) {
+            long endTime = System.currentTimeMillis();
+            double timeTaken = (endTime - startTime) / 1000.0;
+            String formattedTime = String.format("%.2f", timeTaken);
+
+            McChatGame.getInstance().getDatabase().incrementWin(player)
+                    .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
+                    .thenAcceptAsync(v -> {
+                        GameUtils.rewardPlayer(player);
+                        GameUtils.broadcast(MessageKeys.WHO_AM_I_WIN.getMessage()
+                                .replace("{player}", player.getName())
+                                .replace("{time}", formattedTime));
+                        cleanup();
+                    }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
+
+            PlayerUtils.sendToast(player, ConfigKeys.TOAST_MESSAGE, ConfigKeys.TOAST_MATERIAL, ConfigKeys.TOAST_ENABLED);
+            GameUtils.playSoundToWinner(player, ConfigKeys.SOUND_WIN_ENABLED, ConfigKeys.SOUND_WIN_SOUND);
+        }
     }
 
     @Nullable
@@ -60,35 +102,5 @@ public class GameWhoAmI extends GameHandler {
                 cleanup();
             }
         }, ConfigKeys.WHO_AM_I_TIME.getInt() * 20L);
-    }
-
-    @Override
-    public void stop() {
-        if (timeoutTask != null) timeoutTask.cancel();
-        cleanup();
-
-        AutoGameProcessor gameProcessor = McChatGame.getInstance().getGameProcessor();
-        gameProcessor.start();
-    }
-
-    @Override
-    public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE) return;
-
-        if (answer.trim().equalsIgnoreCase(correctAnswer)) {
-            long endTime = System.currentTimeMillis();
-            double timeTaken = (endTime - startTime) / 1000.0;
-            String formattedTime = String.format("%.2f", timeTaken);
-
-            McChatGame.getInstance().getDatabase().incrementWin(player)
-                    .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
-                    .thenAcceptAsync(v -> {
-                        GameUtils.rewardPlayer(player);
-                        GameUtils.broadcast(MessageKeys.WHO_AM_I_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
-                        cleanup();
-                    }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
-        }
     }
 }

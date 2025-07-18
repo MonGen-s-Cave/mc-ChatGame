@@ -33,7 +33,26 @@ public enum ConfigKeys {
     REVERSE_WORDS("reverse.words"),
 
     FILL_OUT_TIME("fill-out.time"),
-    FILL_OUT_WORDS("fill-out.words");
+    FILL_OUT_WORDS("fill-out.words"),
+
+    TOAST_ENABLED("toast.enabled"),
+    TOAST_MESSAGE("toast.message"),
+    TOAST_MATERIAL("toast.material"),
+
+    SOUND_START_ENABLED("sounds.start.enabled"),
+    SOUND_START_SOUND("sounds.start.sound"),
+
+    SOUND_WIN_ENABLED("sounds.win.enabled"),
+    SOUND_WIN_SOUND("sounds.win.sound"),
+
+    PLACEHOLDER_FILL_OUT("placeholders.fill-out"),
+    PLACEHOLDER_MATH("placeholders.math"),
+    PLACEHOLDER_RANDOM("placeholders.random"),
+    PLACEHOLDER_REVERSE("placeholders.reverse"),
+    PLACEHOLDER_WHO_AM_I("placeholders.who-am-i"),
+    PLACEHOLDER_WORD_GUESS("placeholders.word-guess"),
+    PLACEHOLDER_WORD_STOP("placeholders.word-stop"),
+    PLACEHOLDER_NO_GAMES("placeholders.no-game");
 
     private final String path;
     private static final Config config = McChatGame.getInstance().getConfiguration();

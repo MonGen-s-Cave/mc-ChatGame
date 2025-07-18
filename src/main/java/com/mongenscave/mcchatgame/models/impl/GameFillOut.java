@@ -9,6 +9,7 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -30,11 +31,13 @@ public class GameFillOut extends GameHandler {
         List<String> words = ConfigKeys.FILL_OUT_WORDS.getList();
         if (words.isEmpty()) return;
 
+        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
+
         String originalWord = words.get(random.nextInt(words.size())).trim();
         String filled = generateFillOut(originalWord);
-        this.state = GameState.ACTIVE;
         this.gameData = filled;
         this.startTime = System.currentTimeMillis();
+        this.setAsActive();
 
         announceFillOut(filled);
         scheduleTimeout();
@@ -99,5 +102,13 @@ public class GameFillOut extends GameHandler {
                             .replace("{time}", formattedTime));
                     cleanup();
                 }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
+
+        PlayerUtils.sendToast(player, ConfigKeys.TOAST_MESSAGE, ConfigKeys.TOAST_MATERIAL, ConfigKeys.TOAST_ENABLED);
+        GameUtils.playSoundToWinner(player, ConfigKeys.SOUND_WIN_ENABLED, ConfigKeys.SOUND_WIN_SOUND);
+    }
+
+    @Override
+    public long getStartTime() {
+        return startTime;
     }
 }

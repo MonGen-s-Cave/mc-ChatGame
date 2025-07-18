@@ -11,6 +11,7 @@ import com.mongenscave.mcchatgame.listener.GameListener;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.LoggerUtils;
+import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import com.mongenscave.mcchatgame.utils.RegisterUtils;
 import dev.dejvokep.boostedyaml.settings.dumper.DumperSettings;
 import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
@@ -61,6 +62,8 @@ public final class McChatGame extends ZapperJavaPlugin {
     public void onDisable() {
         if (database != null) database.shutdown();
         if (gameProcessor != null) gameProcessor.stop();
+
+        PlayerUtils.cleanup();
     }
 
     public Config getConfiguration() {

@@ -2,7 +2,7 @@ package com.mongenscave.mcchatgame.processor;
 
 import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
 import com.mongenscave.mcchatgame.McChatGame;
-import com.mongenscave.mcchatgame.identifiers.GameTypes;
+import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
 import com.mongenscave.mcchatgame.manager.GameManager;
 
@@ -11,14 +11,14 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class AutoGameProcessor {
-    private final List<GameTypes> GAME_POOL = Arrays.asList(
-            GameTypes.MATH,
-            GameTypes.RANDOM_CHARACTERS,
-            GameTypes.WHO_AM_I,
-            GameTypes.WORD_STOP,
-            GameTypes.WORD_GUESSER,
-            GameTypes.REVERSE,
-            GameTypes.FILL_OUT
+    private final List<GameType> GAME_POOL = Arrays.asList(
+            GameType.MATH,
+            GameType.RANDOM_CHARACTERS,
+            GameType.WHO_AM_I,
+            GameType.WORD_STOP,
+            GameType.WORD_GUESSER,
+            GameType.REVERSE,
+            GameType.FILL_OUT
     );
 
     private MyScheduledTask task;
@@ -59,7 +59,7 @@ public class AutoGameProcessor {
     }
 
     private void startRandomGame() {
-        GameTypes randomType = GAME_POOL.get(random.nextInt(GAME_POOL.size()));
+        GameType randomType = GAME_POOL.get(random.nextInt(GAME_POOL.size()));
         GameManager.startGame(randomType);
     }
 }

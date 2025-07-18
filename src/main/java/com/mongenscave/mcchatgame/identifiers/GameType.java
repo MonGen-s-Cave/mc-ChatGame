@@ -1,6 +1,6 @@
 package com.mongenscave.mcchatgame.identifiers;
 
-public enum GameTypes {
+public enum GameType {
     MATH,
     WHO_AM_I,
     WORD_GUESSER,

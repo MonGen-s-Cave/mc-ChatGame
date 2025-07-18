@@ -3,8 +3,7 @@ aliases:
   - "mcchatgame"
 
 rewards:
-  - "eco give {player} 2500"
-  - "eco give {player} 5000"
+  - "give {player} stick 1"
 
 time-between-games: 20
 
@@ -295,3 +294,26 @@ database:
     database: "coma112"
     username: "root"
     password: ""
+
+toast:
+  enabled: true
+  message: "&a&lSUCCESS GUESS!"
+  material: "BOOK"
+
+sounds:
+  start:
+    enabled: true
+    sound: "ENTITY_ZOMBIE_VILLAGER_CURE"
+  win:
+    enabled: true
+    sound: "ENTITY_PLAYER_LEVELUP"
+
+placeholders:
+  no-game: "&c&lNO GAME"
+  fill-out: "&fFill out &8» &#42f598{word} &8(&#42f598{time}&8)"
+  math: "&fMath &8» &#42f598{word} &8(&#42f598{time}&8)"
+  random: "&fRandom Characters &8» &#42f598{word} &8(&#42f598{time}&8)"
+  reverse: "&fReverse &8» &#42f598{word} &8(&#42f598{time}&8)"
+  who-am-i: "&fWho am I &8» &#42f598{word} &8(&#42f598{time}&8)"
+  word-guess: "&fWord Guess &8» &#42f598{word} &8(&#42f598{time}&8)"
+  word-stop: "&fWord Guess &8» &#42f598{word} &8(&#42f598{time}&8)"
