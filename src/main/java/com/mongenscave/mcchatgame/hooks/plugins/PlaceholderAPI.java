@@ -133,7 +133,7 @@ public class PlaceholderAPI {
                 case "GameRandomCharacters" -> ConfigKeys.RANDOM_CHARACTERS_TIME.getInt();
                 case "GameReverse" -> ConfigKeys.REVERSE_TIME.getInt();
                 case "GameWhoAmI" -> ConfigKeys.WHO_AM_I_TIME.getInt();
-                case "GameWordGuesser" -> ConfigKeys.WORD_GUESSER_TIME.getInt();
+                case "GameWordGuess" -> ConfigKeys.WORD_GUESSER_TIME.getInt();
                 case "GameWordStop" -> ConfigKeys.WORD_STOP_TIME.getInt();
                 default -> 60;
             };

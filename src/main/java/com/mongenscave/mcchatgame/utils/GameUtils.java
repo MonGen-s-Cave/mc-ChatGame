@@ -2,6 +2,8 @@ package com.mongenscave.mcchatgame.utils;
 
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
+import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
+import com.mongenscave.mcchatgame.processor.MessageProcessor;
 import lombok.experimental.UtilityClass;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -38,5 +40,19 @@ public class GameUtils {
         if (!enabled.getBoolean()) return;
 
         player.playSound(player.getLocation(), Sound.valueOf(sound.getString()), 0.5f, 1.0f);
+    }
+
+    public void broadcastMessages(@NotNull MessageKeys messages, @NotNull String... placeholders) {
+        for (String message : messages.getMessages()) {
+            broadcast(MessageProcessor.process(applyPlaceholders(message, placeholders)));
+        }
+    }
+
+    private String applyPlaceholders(@NotNull String message, @NotNull String... placeholders) {
+        for (int i = 0; i < placeholders.length; i+= 2) {
+            message = message.replace(placeholders[i], placeholders[i + 1]);
+        }
+
+        return message;
     }
 }

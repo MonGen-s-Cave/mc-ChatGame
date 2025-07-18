@@ -92,7 +92,7 @@ public class GameWhoAmI extends GameHandler {
 
     private void announceClue() {
         String clue = (String) gameData;
-        GameUtils.broadcast(MessageKeys.WHO_AM_I.getMessage().replace("{question}", clue));
+        GameUtils.broadcastMessages(MessageKeys.WHO_AM_I, "{question}", clue);
     }
 
     private void scheduleTimeout() {

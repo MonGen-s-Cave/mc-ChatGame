@@ -43,39 +43,6 @@ public class GameFillOut extends GameHandler {
         scheduleTimeout();
     }
 
-    @NotNull
-    @Contract("_ -> new")
-    private String generateFillOut(@NotNull String word) {
-        int length = word.length();
-        int replaceCount = Math.max(1, (int) Math.ceil(length / 2.0));
-        List<Integer> indices = Collections.synchronizedList(new ArrayList<>());
-
-        for (int i = 0; i < length; i++) indices.add(i);
-        Collections.shuffle(indices);
-
-        indices = indices.subList(0, replaceCount);
-        char[] chars = word.toCharArray();
-
-        for (int index : indices) {
-            chars[index] = '_';
-        }
-
-        return new String(chars);
-    }
-
-    private void announceFillOut(@NotNull String filled) {
-        GameUtils.broadcast(MessageKeys.FILL_OUT.getMessage().replace("{word}", filled));
-    }
-
-    private void scheduleTimeout() {
-        timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
-            if (state == GameState.ACTIVE) {
-                GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage());
-                cleanup();
-            }
-        }, ConfigKeys.FILL_OUT_TIME.getInt() * 20L);
-    }
-
     @Override
     public void stop() {
         if (timeoutTask != null) timeoutTask.cancel();
@@ -110,5 +77,38 @@ public class GameFillOut extends GameHandler {
     @Override
     public long getStartTime() {
         return startTime;
+    }
+
+    @NotNull
+    @Contract("_ -> new")
+    private String generateFillOut(@NotNull String word) {
+        int length = word.length();
+        int replaceCount = Math.max(1, (int) Math.ceil(length / 2.0));
+        List<Integer> indices = Collections.synchronizedList(new ArrayList<>());
+
+        for (int i = 0; i < length; i++) indices.add(i);
+        Collections.shuffle(indices);
+
+        indices = indices.subList(0, replaceCount);
+        char[] chars = word.toCharArray();
+
+        for (int index : indices) {
+            chars[index] = '_';
+        }
+
+        return new String(chars);
+    }
+
+    private void announceFillOut(@NotNull String filled) {
+        GameUtils.broadcastMessages(MessageKeys.FILL_OUT, "{word}", filled);
+    }
+
+    private void scheduleTimeout() {
+        timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
+            if (state == GameState.ACTIVE) {
+                GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage());
+                cleanup();
+            }
+        }, ConfigKeys.FILL_OUT_TIME.getInt() * 20L);
     }
 }

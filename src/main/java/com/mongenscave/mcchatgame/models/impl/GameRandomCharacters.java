@@ -89,7 +89,7 @@ public class GameRandomCharacters extends GameHandler {
     }
 
     private void announceGame() {
-        GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS.getMessage().replace("{word}", targetSequence));
+        GameUtils.broadcastMessages(MessageKeys.RANDOM_CHARACTERS, "{word}", targetSequence);
     }
 
     private void scheduleTimeout() {

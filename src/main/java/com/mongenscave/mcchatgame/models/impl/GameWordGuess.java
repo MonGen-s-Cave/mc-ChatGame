@@ -94,7 +94,7 @@ public class GameWordGuess extends GameHandler {
     }
 
     private void announceScrambled(@NotNull String scrambled) {
-        GameUtils.broadcast(MessageKeys.WORD_GUESSER.getMessage().replace("{word}", scrambled));
+        GameUtils.broadcastMessages(MessageKeys.WORD_GUESSER, "{word}", scrambled);
     }
 
     private void scheduleTimeout() {

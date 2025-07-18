@@ -11,7 +11,7 @@ public abstract class GameHandler {
     @Getter protected GameState state = GameState.INACTIVE;
     protected Object gameData;
 
-    private static GameHandler currentActivaGame = null;
+    private static GameHandler currentActiveGame = null;
 
     public abstract void start();
     public abstract void stop();
@@ -21,19 +21,19 @@ public abstract class GameHandler {
         state = GameState.INACTIVE;
         gameData = null;
 
-        if (currentActivaGame == this) currentActivaGame = null;
+        if (currentActiveGame == this) currentActiveGame = null;
 
         GameManager.removeInactiveGames();
     }
 
     protected void setAsActive() {
-        currentActivaGame = this;
+        currentActiveGame = this;
         state = GameState.ACTIVE;
     }
 
     @Nullable
     public static GameHandler getCurrentActiveGame() {
-        return currentActivaGame;
+        return currentActiveGame;
     }
 
     @Nullable

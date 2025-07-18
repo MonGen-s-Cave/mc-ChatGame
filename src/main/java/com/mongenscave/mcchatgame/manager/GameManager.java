@@ -61,10 +61,4 @@ public class GameManager {
 
         ACTIVE_GAMES.entrySet().removeIf(entry -> entry.getValue().getState() == GameState.INACTIVE);
     }
-
-    public static List<GameHandler> getActiveGame() {
-        return ACTIVE_GAMES.values().stream()
-                .filter(game -> game.getState() == GameState.ACTIVE)
-                .toList();
-    }
 }

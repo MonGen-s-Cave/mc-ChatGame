@@ -92,7 +92,7 @@ public class GameWordStop extends GameHandler {
 
     private void announceClue() {
         String letter = (String) gameData;
-        GameUtils.broadcast(MessageKeys.WORD_STOP.getMessage().replace("{character}", letter));
+        GameUtils.broadcastMessages(MessageKeys.WORD_STOP, "{character}", letter);
     }
 
     private void scheduleTimeout() {

@@ -81,7 +81,7 @@ public class GameReverse extends GameHandler {
     }
 
     private void announceReversed(@NotNull String reversed) {
-        GameUtils.broadcast(MessageKeys.REVERSE.getMessage().replace("{word}", reversed));
+        GameUtils.broadcastMessages(MessageKeys.REVERSE, "{word}", reversed);
     }
 
     private void scheduleTimeout() {

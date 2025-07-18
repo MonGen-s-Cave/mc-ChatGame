@@ -10,7 +10,6 @@ import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +91,7 @@ public final class GameMath extends GameHandler {
 
     private void announceProblem() {
         String question = (String) gameData;
-        GameUtils.broadcast(MessageKeys.MATH_GAME.getMessage().replace("{problem}", question));
+        GameUtils.broadcastMessages(MessageKeys.MATH_GAME, "{problem}", question);
     }
 
     private void scheduleTimeout() {
