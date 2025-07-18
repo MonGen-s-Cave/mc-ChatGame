@@ -8,11 +8,13 @@ rewards:
 time-between-games: 20
 
 random-characters:
+  enabled: true
   time: 60
   length: 8
 
 math:
   time: 60
+  enabled: true
   problems:
     - "5 x 5 = 25"
     - "7 + 3 = 10"
@@ -61,6 +63,7 @@ math:
 
 who-am-i:
   time: 60
+  enabled: true
   words:
     - "I sneak at night, my bones creak, and I shoot arrows at you! = Skeleton"
     - "I sneak up quietly, then explode loudly, leaving a giant hole! = Creeper"
@@ -72,6 +75,7 @@ who-am-i:
 
 word-stop:
   time: 60
+  enabled: true
   mobs:
     - "Z = Zombie"
     - "E = Enderman"
@@ -87,6 +91,7 @@ word-stop:
 
 word-guesser:
   time: 60
+  enabled: true
   words:
     - "Apple"
     - "Desk"
@@ -100,6 +105,7 @@ word-guesser:
 
 reverse:
   time: 60
+  enabled: true
   words:
     - "Apple"
     - "Desk"
@@ -113,6 +119,7 @@ reverse:
 
 fill-out:
   time: 60
+  enabled: true
   words:
     - "Apple"
     - "Desk"

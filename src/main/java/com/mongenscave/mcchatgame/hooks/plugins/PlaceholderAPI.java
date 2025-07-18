@@ -78,9 +78,7 @@ public class PlaceholderAPI {
         private String getCurrentGamePlaceholder() {
             GameHandler activeGame = GameHandler.getCurrentActiveGame();
 
-            if (activeGame == null || activeGame.getState() != GameState.ACTIVE) {
-                return ConfigKeys.PLACEHOLDER_NO_GAMES.getString();
-            }
+            if (activeGame == null || activeGame.getState() != GameState.ACTIVE) return ConfigKeys.PLACEHOLDER_NO_GAMES.getString();
 
             String gameType = activeGame.getClass().getSimpleName();
             String placeholder = getPlaceholderForGameType(gameType);
@@ -89,6 +87,8 @@ public class PlaceholderAPI {
 
             String gameWord = activeGame.getGameData();
             String timeRemaining = getTimeRemaining(activeGame);
+
+            if (gameWord == null) return ConfigKeys.PLACEHOLDER_NO_GAMES.getString();
 
             return placeholder
                     .replace("{word}", gameWord)
@@ -103,7 +103,7 @@ public class PlaceholderAPI {
                 case "GameRandomCharacters" -> ConfigKeys.PLACEHOLDER_RANDOM.getString();
                 case "GameReverse" -> ConfigKeys.PLACEHOLDER_REVERSE.getString();
                 case "GameWhoAmI" -> ConfigKeys.PLACEHOLDER_WHO_AM_I.getString();
-                case "GameWordGuesser" -> ConfigKeys.PLACEHOLDER_WORD_GUESS.getString();
+                case "GameWordGuess" -> ConfigKeys.PLACEHOLDER_WORD_GUESS.getString();
                 case "GameWordStop" -> ConfigKeys.PLACEHOLDER_WORD_STOP.getString();
                 default -> null;
             };

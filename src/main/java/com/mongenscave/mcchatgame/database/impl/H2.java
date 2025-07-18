@@ -132,8 +132,7 @@ public class H2 implements Database {
                 CompletableFuture.runAsync(() -> {
                     String sql = "UPDATE game_players SET fastest_time = ? WHERE name = ?";
 
-                    try (Connection conn = dataSource.getConnection();
-                         PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
                         stmt.setDouble(1, newTime);
                         stmt.setString(2, player.getName());
                         stmt.executeUpdate();
@@ -149,8 +148,7 @@ public class H2 implements Database {
     public CompletableFuture<Double> getTime(@NotNull Player player) {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "SELECT fastest_time FROM game_players WHERE name = ?";
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, player.getName());
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) return rs.getDouble("fastest_time");

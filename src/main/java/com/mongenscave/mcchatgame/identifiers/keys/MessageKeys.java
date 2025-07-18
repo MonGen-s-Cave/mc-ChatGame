@@ -17,7 +17,6 @@ public enum MessageKeys {
     WHO_AM_I("messages.who-am-i"),
     WORD_STOP("messages.word-stop"),
     WORD_GUESSER("messages.word-guesser"),
-    COPY("messages.copy"),
     REVERSE("messages.reverse"),
     FILL_OUT("messages.fill-out"),
     RANDOM_CHARACTERS("messages.random-characters"),
