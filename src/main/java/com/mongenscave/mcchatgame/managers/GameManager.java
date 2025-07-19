@@ -1,4 +1,4 @@
-package com.mongenscave.mcchatgame.manager;
+package com.mongenscave.mcchatgame.managers;
 
 import com.mongenscave.mcchatgame.identifiers.GameState;
 import com.mongenscave.mcchatgame.identifiers.GameType;

@@ -2,7 +2,7 @@ package com.mongenscave.mcchatgame.listener;
 
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.database.Database;
-import com.mongenscave.mcchatgame.manager.GameManager;
+import com.mongenscave.mcchatgame.managers.GameManager;
 import org.bukkit.event.Listener;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

@@ -3,7 +3,7 @@ package com.mongenscave.mcchatgame.hooks.plugins;
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameState;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
-import com.mongenscave.mcchatgame.manager.GameManager;
+import com.mongenscave.mcchatgame.managers.StreakManager;
 import com.mongenscave.mcchatgame.models.GameHandler;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
@@ -11,7 +11,6 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.util.Optional;
 
 @SuppressWarnings("deprecation")
@@ -69,6 +68,14 @@ public class PlaceholderAPI {
 
                 case "wins" -> {
                     return String.valueOf(McChatGame.getInstance().getDatabase().getWins(player));
+                }
+
+                case "streak" -> {
+                    return String.valueOf(StreakManager.getInstance().getPlayerStreak(player));
+                }
+
+                case "best_streak" -> {
+                    return String.valueOf(StreakManager.getInstance().getPlayerBestStreak(player));
                 }
             }
 

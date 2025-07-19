@@ -69,6 +69,8 @@ public final class GameMath extends GameHandler {
                         GameUtils.broadcast(MessageKeys.MATH_GAME_WIN.getMessage()
                                 .replace("{player}", player.getName())
                                 .replace("{time}", formattedTime));
+
+                        handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 
@@ -98,6 +100,7 @@ public final class GameMath extends GameHandler {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage());
+                handleGameTimeout();
                 cleanup();
             }
         }, ConfigKeys.MATH_TIME.getInt() * 20L);

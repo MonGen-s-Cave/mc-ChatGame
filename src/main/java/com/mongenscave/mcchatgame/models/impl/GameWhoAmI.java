@@ -75,6 +75,8 @@ public class GameWhoAmI extends GameHandler {
                         GameUtils.broadcast(MessageKeys.WHO_AM_I_WIN.getMessage()
                                 .replace("{player}", player.getName())
                                 .replace("{time}", formattedTime));
+
+                        handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 
@@ -99,6 +101,7 @@ public class GameWhoAmI extends GameHandler {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.WHO_AM_I_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                handleGameTimeout();
                 cleanup();
             }
         }, ConfigKeys.WHO_AM_I_TIME.getInt() * 20L);

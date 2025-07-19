@@ -144,6 +144,36 @@ crafting:
         - "STICK"
         - "IRON_INGOT"
 
+streaks:
+  enabled: true
+  5:
+    reach-message:
+      enabled: true
+      message:
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+        - " &8&l| &#42f598&l5 &a&lNEW STREAK"
+        - ""
+        - " &8&l| &f{player} reached streak 5!"
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+    lost-message:
+      enabled: true
+      message:
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+        - " &8&l| &#42f598&l5 &c&lSTREAK LOST"
+        - ""
+        - " &8&l| &f{player} reached streak 5!"
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+    commands:
+      - "give {player} diamond 5"
+
 database:
   type: "h2" # H2, MySQL
 

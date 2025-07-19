@@ -181,6 +181,8 @@ public class GameCrafting extends GameHandler implements Listener {
                     GameUtils.broadcast(MessageKeys.CRAFTING_WIN.getMessage()
                             .replace("{time}", formattedTime)
                             .replace("{player}", player.getName()));
+
+                    handleWin(player);
                     stop();
                 }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 
@@ -192,6 +194,7 @@ public class GameCrafting extends GameHandler implements Listener {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.CRAFTING_NO_WIN.getMessage());
+                handleGameTimeout();
                 stop();
             }
         }, ConfigKeys.CRAFTING_TIME.getInt() * 20L);
@@ -276,9 +279,7 @@ public class GameCrafting extends GameHandler implements Listener {
             if (item != null && item.getType() != Material.AIR) provided.add(item.clone());
         }
 
-        if (required.size() != provided.size()) {
-            return false;
-        }
+        if (required.size() != provided.size()) return false;
 
         for (ItemStack req : required) {
             boolean found = false;

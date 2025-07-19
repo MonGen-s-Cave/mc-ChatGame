@@ -1,7 +1,8 @@
 package com.mongenscave.mcchatgame.models;
 
 import com.mongenscave.mcchatgame.identifiers.GameState;
-import com.mongenscave.mcchatgame.manager.GameManager;
+import com.mongenscave.mcchatgame.managers.GameManager;
+import com.mongenscave.mcchatgame.managers.StreakManager;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -10,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 public abstract class GameHandler {
     @Getter protected GameState state = GameState.INACTIVE;
     protected Object gameData;
+    protected boolean gameStarted = false;
 
     private static GameHandler currentActiveGame = null;
 
@@ -20,6 +22,7 @@ public abstract class GameHandler {
     protected void cleanup() {
         state = GameState.INACTIVE;
         gameData = null;
+        gameStarted = false;
 
         if (currentActiveGame == this) currentActiveGame = null;
 
@@ -29,6 +32,19 @@ public abstract class GameHandler {
     protected void setAsActive() {
         currentActiveGame = this;
         state = GameState.ACTIVE;
+
+        if (!gameStarted) {
+            StreakManager.getInstance().onGameStart();
+            gameStarted = true;
+        }
+    }
+
+    protected void handlePlayerWin(@NotNull Player winner) {
+        StreakManager.getInstance().onPlayerWin(winner);
+    }
+
+    protected void handleGameTimeout() {
+        StreakManager.getInstance().onGameTimeout();
     }
 
     @Nullable

@@ -61,7 +61,9 @@ public class H2 implements Database {
                     CREATE TABLE IF NOT EXISTS game_players (
                         name VARCHAR(16) PRIMARY KEY,
                         wins INTEGER NOT NULL DEFAULT 0,
-                        fastest_time DOUBLE NOT NULL DEFAULT 999999.99
+                        fastest_time DOUBLE NOT NULL DEFAULT 999999.99,
+                        current_streak INTEGER NOT NULL DEFAULT 0,
+                        best_streak INTEGER NOT NULL DEFAULT 0
                     )
                     """;
 
@@ -70,6 +72,16 @@ public class H2 implements Database {
 
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_wins ON game_players(wins)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_fastest_time ON game_players(fastest_time)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_current_streak ON game_players(current_streak)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_best_streak ON game_players(best_streak)");
+
+                // Add streak columns if they don't exist (for existing databases)
+                try {
+                    stmt.execute("ALTER TABLE game_players ADD COLUMN IF NOT EXISTS current_streak INTEGER NOT NULL DEFAULT 0");
+                    stmt.execute("ALTER TABLE game_players ADD COLUMN IF NOT EXISTS best_streak INTEGER NOT NULL DEFAULT 0");
+                } catch (SQLException e) {
+                    // Columns might already exist, ignore
+                }
             }
         }
     }
@@ -77,7 +89,7 @@ public class H2 implements Database {
     @Override
     public void createPlayer(@NotNull Player player) {
         CompletableFuture.runAsync(() -> {
-            String sql = "MERGE INTO game_players (name, wins, fastest_time) VALUES (?, 0, 999999.99)";
+            String sql = "MERGE INTO game_players (name, wins, fastest_time, current_streak, best_streak) VALUES (?, 0, 999999.99, 0, 0)";
 
             try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, player.getName());
@@ -258,8 +270,94 @@ public class H2 implements Database {
     }
 
     @Override
-    public CompletableFuture<Void> shutdown() {
+    public CompletableFuture<Integer> getCurrentStreak(@NotNull Player player) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT current_streak FROM game_players WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) return rs.getInt("current_streak");
+                    return 0;
+                }
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error getting current streak: " + exception.getMessage());
+                return 0;
+            }
+        }, virtualThreadExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Integer> getBestStreak(@NotNull Player player) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT best_streak FROM game_players WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) return rs.getInt("best_streak");
+                    return 0;
+                }
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error getting best streak: " + exception.getMessage());
+                return 0;
+            }
+        }, virtualThreadExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Void> incrementStreak(@NotNull Player player) {
         return CompletableFuture.runAsync(() -> {
+            String sql = "UPDATE game_players SET current_streak = current_streak + 1, best_streak = GREATEST(best_streak, current_streak + 1) WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                stmt.executeUpdate();
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error incrementing streak: " + exception.getMessage());
+            }
+        }, virtualThreadExecutor).exceptionally(exception -> {
+            LoggerUtils.error(exception.getMessage());
+            return null;
+        });
+    }
+
+    @Override
+    public CompletableFuture<Void> resetStreak(@NotNull Player player) {
+        return CompletableFuture.runAsync(() -> {
+            String sql = "UPDATE game_players SET current_streak = 0 WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                stmt.executeUpdate();
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error resetting streak: " + exception.getMessage());
+            }
+        }, virtualThreadExecutor).exceptionally(exception -> {
+            LoggerUtils.error(exception.getMessage());
+            return null;
+        });
+    }
+
+    @Override
+    public CompletableFuture<Void> resetAllStreaks() {
+        return CompletableFuture.runAsync(() -> {
+            String sql = "UPDATE game_players SET current_streak = 0";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.executeUpdate();
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error resetting all streaks: " + exception.getMessage());
+            }
+        }, virtualThreadExecutor).exceptionally(exception -> {
+            LoggerUtils.error(exception.getMessage());
+            return null;
+        });
+    }
+
+    @Override
+    public void shutdown() {
+        CompletableFuture.runAsync(() -> {
             virtualThreadExecutor.shutdown();
             if (dataSource != null && !dataSource.isClosed()) dataSource.close();
         });

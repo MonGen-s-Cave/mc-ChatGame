@@ -73,6 +73,8 @@ public class GameWordGuess extends GameHandler {
                         GameUtils.broadcast(MessageKeys.WORD_GUESSER_WIN.getMessage()
                                 .replace("{player}", player.getName())
                                 .replace("{time}", formattedTime));
+
+                        handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 
@@ -101,6 +103,7 @@ public class GameWordGuess extends GameHandler {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.WORD_GUESSER_NO_WIN.getMessage());
+                handleGameTimeout();
                 cleanup();
             }
         }, ConfigKeys.WORD_GUESSER_TIME.getInt() * 20L);

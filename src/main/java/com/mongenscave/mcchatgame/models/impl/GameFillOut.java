@@ -71,6 +71,8 @@ public class GameFillOut extends GameHandler {
                         GameUtils.broadcast(MessageKeys.FILL_OUT_WIN.getMessage()
                                 .replace("{player}", player.getName())
                                 .replace("{time}", formattedTime));
+
+                        handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 
@@ -112,6 +114,7 @@ public class GameFillOut extends GameHandler {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage());
+                handleGameTimeout();
                 cleanup();
             }
         }, ConfigKeys.FILL_OUT_TIME.getInt() * 20L);

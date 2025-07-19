@@ -67,6 +67,8 @@ public class GameRandomCharacters extends GameHandler {
                         GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_WIN.getMessage()
                                 .replace("{player}", player.getName())
                                 .replace("{time}", formattedTime));
+
+                        handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 
@@ -95,6 +97,7 @@ public class GameRandomCharacters extends GameHandler {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE) {
                 GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_NO_WIN.getMessage());
+                handleGameTimeout();
                 cleanup();
             }
         }, ConfigKeys.RANDOM_CHARACTERS_TIME.getInt() * 20L);

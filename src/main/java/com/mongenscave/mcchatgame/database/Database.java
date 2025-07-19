@@ -28,5 +28,15 @@ public interface Database {
 
     CompletableFuture<Integer> getMostWins(int position);
 
-    CompletableFuture<Void> shutdown();
+    CompletableFuture<Integer> getCurrentStreak(@NotNull Player player);
+
+    CompletableFuture<Integer> getBestStreak(@NotNull Player player);
+
+    CompletableFuture<Void> incrementStreak(@NotNull Player player);
+
+    CompletableFuture<Void> resetStreak(@NotNull Player player);
+
+    CompletableFuture<Void> resetAllStreaks();
+
+    void shutdown();
 }

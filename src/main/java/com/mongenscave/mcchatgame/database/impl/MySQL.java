@@ -68,8 +68,12 @@ public class MySQL implements Database {
                         name VARCHAR(16) PRIMARY KEY,
                         wins INTEGER NOT NULL DEFAULT 0,
                         fastest_time DOUBLE NOT NULL DEFAULT 999999.99,
+                        current_streak INTEGER NOT NULL DEFAULT 0,
+                        best_streak INTEGER NOT NULL DEFAULT 0,
                         INDEX idx_wins (wins),
-                        INDEX idx_fastest_time (fastest_time)
+                        INDEX idx_fastest_time (fastest_time),
+                        INDEX idx_current_streak (current_streak),
+                        INDEX idx_best_streak (best_streak)
                     )
                     """;
 
@@ -82,7 +86,7 @@ public class MySQL implements Database {
     @Override
     public void createPlayer(@NotNull Player player) {
         CompletableFuture.runAsync(() -> {
-            String sql = "INSERT INTO game_players (name, wins, fastest_time) VALUES (?, 0, 999999.99) ON DUPLICATE KEY UPDATE name = name";
+            String sql = "INSERT INTO game_players (name, wins, fastest_time, current_streak, best_streak) VALUES (?, 0, 999999.99, 0, 0) ON DUPLICATE KEY UPDATE name = name";
 
             try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, player.getName());
@@ -263,8 +267,94 @@ public class MySQL implements Database {
     }
 
     @Override
-    public CompletableFuture<Void> shutdown() {
+    public CompletableFuture<Integer> getCurrentStreak(@NotNull Player player) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT current_streak FROM game_players WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) return rs.getInt("current_streak");
+                    return 0;
+                }
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error getting current streak: " + exception.getMessage());
+                return 0;
+            }
+        }, virtualThreadExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Integer> getBestStreak(@NotNull Player player) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT best_streak FROM game_players WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) return rs.getInt("best_streak");
+                    return 0;
+                }
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error getting best streak: " + exception.getMessage());
+                return 0;
+            }
+        }, virtualThreadExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Void> incrementStreak(@NotNull Player player) {
         return CompletableFuture.runAsync(() -> {
+            String sql = "UPDATE game_players SET current_streak = current_streak + 1, best_streak = GREATEST(best_streak, current_streak + 1) WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                stmt.executeUpdate();
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error incrementing streak: " + exception.getMessage());
+            }
+        }, virtualThreadExecutor).exceptionally(exception -> {
+            LoggerUtils.error(exception.getMessage());
+            return null;
+        });
+    }
+
+    @Override
+    public CompletableFuture<Void> resetStreak(@NotNull Player player) {
+        return CompletableFuture.runAsync(() -> {
+            String sql = "UPDATE game_players SET current_streak = 0 WHERE name = ?";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, player.getName());
+                stmt.executeUpdate();
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error resetting streak: " + exception.getMessage());
+            }
+        }, virtualThreadExecutor).exceptionally(exception -> {
+            LoggerUtils.error(exception.getMessage());
+            return null;
+        });
+    }
+
+    @Override
+    public CompletableFuture<Void> resetAllStreaks() {
+        return CompletableFuture.runAsync(() -> {
+            String sql = "UPDATE game_players SET current_streak = 0";
+
+            try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.executeUpdate();
+            } catch (SQLException exception) {
+                LoggerUtils.error("Error resetting all streaks: " + exception.getMessage());
+            }
+        }, virtualThreadExecutor).exceptionally(exception -> {
+            LoggerUtils.error(exception.getMessage());
+            return null;
+        });
+    }
+
+    @Override
+    public void shutdown() {
+        CompletableFuture.runAsync(() -> {
             virtualThreadExecutor.shutdown();
             if (dataSource != null && !dataSource.isClosed()) dataSource.close();
         });

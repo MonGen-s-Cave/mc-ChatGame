@@ -6,8 +6,10 @@ import com.mongenscave.mcchatgame.processor.MessageProcessor;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Set;
 
 @Getter
 public enum ConfigKeys {
@@ -67,7 +69,10 @@ public enum ConfigKeys {
     PLACEHOLDER_WORD_GUESS("placeholders.word-guess"),
     PLACEHOLDER_WORD_STOP("placeholders.word-stop"),
     PLACEHOLDER_CRAFTING("placeholders.crafting"),
-    PLACEHOLDER_NO_GAMES("placeholders.no-game");
+    PLACEHOLDER_NO_GAMES("placeholders.no-game"),
+
+    STREAKS_ENABLED("streaks.enabled"),
+    STREAKS_MILESTONES("streaks");
 
     private final String path;
     private static final Config config = McChatGame.getInstance().getConfiguration();
@@ -98,5 +103,11 @@ public enum ConfigKeys {
 
     public Section getSection() {
         return config.getSection(path);
+    }
+
+    @NotNull
+    public Set<String> getKeys() {
+        Section section = config.getSection(path);
+        return section != null ? section.getRoutesAsStrings(false) : Set.of();
     }
 }

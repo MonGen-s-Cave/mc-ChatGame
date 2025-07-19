@@ -4,7 +4,7 @@ import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
-import com.mongenscave.mcchatgame.manager.GameManager;
+import com.mongenscave.mcchatgame.managers.GameManager;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
