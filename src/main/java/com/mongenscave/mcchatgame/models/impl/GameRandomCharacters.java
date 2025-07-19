@@ -10,7 +10,6 @@ import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class GameRandomCharacters extends GameHandler {
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
-    private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+    private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^*()";
     private MyScheduledTask timeoutTask;
     private String targetSequence;
     private long startTime;

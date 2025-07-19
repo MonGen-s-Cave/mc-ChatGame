@@ -1,3 +1,4 @@
+com.github.User-19fff:EasierMessages:81355a2cb6
 com.zaxxer:HikariCP:6.2.1
 org.bstats:bstats-bukkit:3.0.2
 io.github.revxrsal:lamp.brigadier:4.0.0-rc.12

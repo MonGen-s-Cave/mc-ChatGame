@@ -27,6 +27,7 @@ dependencies {
         exclude(module = "lamp.brigadier")
     }
 
+    zap("com.github.User-19fff:EasierMessages:81355a2cb6")
     zap("mysql:mysql-connector-java:8.0.33")
     zap("com.zaxxer:HikariCP:6.2.1")
     zap("org.bstats:bstats-bukkit:3.0.2")

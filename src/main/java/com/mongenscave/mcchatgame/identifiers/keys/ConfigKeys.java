@@ -3,6 +3,7 @@ package com.mongenscave.mcchatgame.identifiers.keys;
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.config.Config;
 import com.mongenscave.mcchatgame.processor.MessageProcessor;
+import dev.dejvokep.boostedyaml.block.implementation.Section;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,6 +44,11 @@ public enum ConfigKeys {
     FILL_OUT_WORDS("fill-out.words"),
     FILL_OUT_ENABLED("fill-out.enabled"),
 
+    CRAFTING_TIME("crafting.time"),
+    CRAFTING_CRAFTS("crafting.crafts"),
+    CRAFTING_ENABLED("crafting.enabled"),
+    CRAFTING_TITLE("crafting.title"),
+
     TOAST_ENABLED("toast.enabled"),
     TOAST_MESSAGE("toast.message"),
     TOAST_MATERIAL("toast.material"),
@@ -60,6 +66,7 @@ public enum ConfigKeys {
     PLACEHOLDER_WHO_AM_I("placeholders.who-am-i"),
     PLACEHOLDER_WORD_GUESS("placeholders.word-guess"),
     PLACEHOLDER_WORD_STOP("placeholders.word-stop"),
+    PLACEHOLDER_CRAFTING("placeholders.crafting"),
     PLACEHOLDER_NO_GAMES("placeholders.no-game");
 
     private final String path;
@@ -87,5 +94,9 @@ public enum ConfigKeys {
 
     public List<String> getList() {
         return config.getList(path);
+    }
+
+    public Section getSection() {
+        return config.getSection(path);
     }
 }

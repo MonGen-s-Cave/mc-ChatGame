@@ -20,6 +20,7 @@ public enum MessageKeys {
     REVERSE("messages.reverse"),
     FILL_OUT("messages.fill-out"),
     RANDOM_CHARACTERS("messages.random-characters"),
+    CRAFTING("messages.crafting"),
 
     MATH_GAME_WIN("messages.math-game-win"),
     WHO_AM_I_WIN("messages.who-am-i-win"),
@@ -29,6 +30,7 @@ public enum MessageKeys {
     REVERSE_WIN("messages.reverse-win"),
     FILL_OUT_WIN("messages.fill-out-win"),
     RANDOM_CHARACTERS_WIN("messages.random-characters-win"),
+    CRAFTING_WIN("messages.crafting-win"),
 
     MATH_GAME_NO_WIN("messages.math-game-no-win"),
     WHO_AM_I_NO_WIN("messages.who-am-i-no-win"),
@@ -37,7 +39,10 @@ public enum MessageKeys {
     COPY_NO_WIN("messages.copy-no-win"),
     REVERSE_NO_WIN("messages.reverse-no-win"),
     FILL_OUT_NO_WIN("messages.fill-out-no-win"),
-    RANDOM_CHARACTERS_NO_WIN("messages.random-characters-no-win");
+    RANDOM_CHARACTERS_NO_WIN("messages.random-characters-no-win"),
+    CRAFTING_NO_WIN("messages.crafting-no-win"),
+
+    NO_CRAFTING_GAME("messages.no-crafting-game");
 
     private final String path;
     private static final Config config = McChatGame.getInstance().getLanguage();

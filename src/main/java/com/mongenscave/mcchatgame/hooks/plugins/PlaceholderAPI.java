@@ -105,6 +105,7 @@ public class PlaceholderAPI {
                 case "GameWhoAmI" -> ConfigKeys.PLACEHOLDER_WHO_AM_I.getString();
                 case "GameWordGuess" -> ConfigKeys.PLACEHOLDER_WORD_GUESS.getString();
                 case "GameWordStop" -> ConfigKeys.PLACEHOLDER_WORD_STOP.getString();
+                case "GameCrafting" -> ConfigKeys.PLACEHOLDER_CRAFTING.getString();
                 default -> null;
             };
         }
@@ -135,6 +136,7 @@ public class PlaceholderAPI {
                 case "GameWhoAmI" -> ConfigKeys.WHO_AM_I_TIME.getInt();
                 case "GameWordGuess" -> ConfigKeys.WORD_GUESSER_TIME.getInt();
                 case "GameWordStop" -> ConfigKeys.WORD_STOP_TIME.getInt();
+                case "GameCrafting" -> ConfigKeys.CRAFTING_TIME.getInt();
                 default -> 60;
             };
         }

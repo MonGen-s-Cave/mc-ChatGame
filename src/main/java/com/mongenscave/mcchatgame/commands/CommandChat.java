@@ -2,7 +2,10 @@ package com.mongenscave.mcchatgame.commands;
 
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
+import com.mongenscave.mcchatgame.models.GameHandler;
+import com.mongenscave.mcchatgame.models.impl.GameCrafting;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import revxrsal.commands.annotation.Subcommand;
 import revxrsal.commands.bukkit.annotation.CommandPermission;
@@ -17,5 +20,16 @@ public class CommandChat implements OrphanCommand {
         plugin.getConfiguration().reload();
         plugin.getLanguage().reload();
         sender.sendMessage(MessageKeys.RELOAD.getMessage());
+    }
+
+    @Subcommand("crafting")
+    public void crafting(@NotNull Player player) {
+        GameHandler activeGame = GameHandler.getCurrentActiveGame();
+        if (!(activeGame instanceof GameCrafting craftingGame)) {
+            player.sendMessage(MessageKeys.NO_CRAFTING_GAME.getMessage());
+            return;
+        }
+
+        craftingGame.openCraftingMenu(player);
     }
 }

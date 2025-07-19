@@ -7,5 +7,6 @@ public enum GameType {
     RANDOM_CHARACTERS,
     WORD_STOP,
     FILL_OUT,
-    REVERSE
+    REVERSE,
+    CRAFTING
 }

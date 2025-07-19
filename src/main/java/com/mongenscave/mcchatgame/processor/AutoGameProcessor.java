@@ -15,15 +15,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class AutoGameProcessor {
-    private final List<GameType> GAME_POOL = Arrays.asList(
-            GameType.MATH,
-            GameType.RANDOM_CHARACTERS,
-            GameType.WHO_AM_I,
-            GameType.WORD_STOP,
-            GameType.WORD_GUESSER,
-            GameType.REVERSE,
-            GameType.FILL_OUT
-    );
+    private final List<GameType> GAME_POOL = Collections.synchronizedList(new ArrayList<>(Arrays.asList(GameType.values())));
 
     private MyScheduledTask task;
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -94,6 +86,7 @@ public class AutoGameProcessor {
                 case WORD_GUESSER -> isEnabled = ConfigKeys.WORD_GUESSER_ENABLED.getBoolean();
                 case REVERSE -> isEnabled = ConfigKeys.REVERSE_ENABLED.getBoolean();
                 case FILL_OUT -> isEnabled = ConfigKeys.FILL_OUT_ENABLED.getBoolean();
+                case CRAFTING -> isEnabled = ConfigKeys.CRAFTING_ENABLED.getBoolean();
             }
 
             if (isEnabled) enabledGames.add(gameType);

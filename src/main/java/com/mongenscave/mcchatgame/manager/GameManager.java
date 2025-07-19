@@ -3,6 +3,7 @@ package com.mongenscave.mcchatgame.manager;
 import com.mongenscave.mcchatgame.identifiers.GameState;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.models.GameHandler;
+import com.mongenscave.mcchatgame.models.impl.GameCrafting;
 import com.mongenscave.mcchatgame.models.impl.GameFillOut;
 import com.mongenscave.mcchatgame.models.impl.GameMath;
 import com.mongenscave.mcchatgame.models.impl.GameRandomCharacters;
@@ -32,6 +33,7 @@ public class GameManager {
             case WORD_STOP -> new GameWordStop();
             case REVERSE -> new GameReverse();
             case FILL_OUT -> new GameFillOut();
+            case CRAFTING -> new GameCrafting();
         };
 
         handler.start();
