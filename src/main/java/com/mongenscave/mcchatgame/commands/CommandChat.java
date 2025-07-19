@@ -12,7 +12,7 @@ public class CommandChat implements OrphanCommand {
     private static final McChatGame plugin = McChatGame.getInstance();
 
     @Subcommand("reload")
-    @CommandPermission("fyrechatgame.reload")
+    @CommandPermission("chatgame.reload")
     public void reload(@NotNull CommandSender sender) {
         plugin.getConfiguration().reload();
         plugin.getLanguage().reload();

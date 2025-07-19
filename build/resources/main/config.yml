@@ -6,6 +6,7 @@ rewards:
   - "give {player} stick 1"
 
 time-between-games: 20
+min-players: 2
 
 random-characters:
   enabled: true
