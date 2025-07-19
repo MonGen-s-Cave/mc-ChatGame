@@ -69,19 +69,6 @@ public class H2 implements Database {
 
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute(gamePlayersTable);
-
-                stmt.execute("CREATE INDEX IF NOT EXISTS idx_wins ON game_players(wins)");
-                stmt.execute("CREATE INDEX IF NOT EXISTS idx_fastest_time ON game_players(fastest_time)");
-                stmt.execute("CREATE INDEX IF NOT EXISTS idx_current_streak ON game_players(current_streak)");
-                stmt.execute("CREATE INDEX IF NOT EXISTS idx_best_streak ON game_players(best_streak)");
-
-                // Add streak columns if they don't exist (for existing databases)
-                try {
-                    stmt.execute("ALTER TABLE game_players ADD COLUMN IF NOT EXISTS current_streak INTEGER NOT NULL DEFAULT 0");
-                    stmt.execute("ALTER TABLE game_players ADD COLUMN IF NOT EXISTS best_streak INTEGER NOT NULL DEFAULT 0");
-                } catch (SQLException e) {
-                    // Columns might already exist, ignore
-                }
             }
         }
     }

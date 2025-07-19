@@ -7,16 +7,16 @@ rewards:
   - "[15] give {player} diamond 1"
 
 time-between-games: 20
-min-players: 2
+min-players: 1
 
 random-characters:
-  enabled: false
+  enabled: true
   time: 60
   length: 8
 
 math:
   time: 60
-  enabled: false
+  enabled: true
   problems:
     - "5 x 5 = 25"
     - "7 + 3 = 10"
@@ -65,7 +65,7 @@ math:
 
 who-am-i:
   time: 60
-  enabled: false
+  enabled: true
   words:
     - "I sneak at night, my bones creak, and I shoot arrows at you! = Skeleton"
     - "I sneak up quietly, then explode loudly, leaving a giant hole! = Creeper"
@@ -77,7 +77,7 @@ who-am-i:
 
 word-stop:
   time: 60
-  enabled: false
+  enabled: true
   mobs:
     - "Z = Zombie"
     - "E = Enderman"
@@ -93,7 +93,7 @@ word-stop:
 
 word-guesser:
   time: 60
-  enabled: false
+  enabled: true
   words:
     - "Apple"
     - "Desk"
@@ -107,7 +107,7 @@ word-guesser:
 
 reverse:
   time: 60
-  enabled: false
+  enabled: true
   words:
     - "Apple"
     - "Desk"
@@ -121,7 +121,7 @@ reverse:
 
 fill-out:
   time: 60
-  enabled: false
+  enabled: true
   words:
     - "Apple"
     - "Desk"
@@ -143,6 +143,36 @@ crafting:
         - "STICK"
         - "STICK"
         - "IRON_INGOT"
+
+streaks:
+  enabled: true
+  5:
+    reach-message:
+      enabled: true
+      message:
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+        - " &8&l| &#42f598&l5 &a&lNEW STREAK"
+        - ""
+        - " &8&l| &f{player} reached streak 5!"
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+    lost-message:
+      enabled: true
+      message:
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+        - " &8&l| &#42f598&l5 &c&lSTREAK LOST"
+        - ""
+        - " &8&l| &f{player} reached streak 5!"
+        - ""
+        - "&8&l&m--------------------------"
+        - ""
+    commands:
+      - "give {player} diamond 5"
 
 database:
   type: "h2" # H2, MySQL

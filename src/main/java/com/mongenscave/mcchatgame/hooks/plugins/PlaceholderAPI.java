@@ -63,19 +63,24 @@ public class PlaceholderAPI {
                 }
 
                 case "fastest_time" -> {
-                    return String.valueOf(McChatGame.getInstance().getDatabase().getTime(player));
+                    double time = McChatGame.getInstance().getDatabase().getTime(player).join();
+                    // Ha nincs még feljegyezett idő (999999.99), akkor 00.00-t adunk vissza
+                    if (time >= 999999.99) {
+                        return "00.00";
+                    }
+                    return String.format("%.2f", time);
                 }
 
                 case "wins" -> {
-                    return String.valueOf(McChatGame.getInstance().getDatabase().getWins(player));
+                    return String.valueOf(McChatGame.getInstance().getDatabase().getWins(player).join());
                 }
 
                 case "streak" -> {
-                    return String.valueOf(StreakManager.getInstance().getPlayerStreak(player));
+                    return String.valueOf(StreakManager.getInstance().getPlayerStreak(player).join());
                 }
 
                 case "best_streak" -> {
-                    return String.valueOf(StreakManager.getInstance().getPlayerBestStreak(player));
+                    return String.valueOf(StreakManager.getInstance().getPlayerBestStreak(player).join());
                 }
             }
 
