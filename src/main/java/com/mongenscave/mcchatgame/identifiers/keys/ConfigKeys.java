@@ -13,27 +13,35 @@ public enum ConfigKeys {
     ALIASES("aliases"),
     REWARDS("rewards"),
     TIME_BETWEEN_GAMES("time-between-games"),
+    MIN_PLAYERS("min-players"),
 
     MATH_TIME("math.time"),
     MATH_PROBLEMS("math.problems"),
+    MATH_ENABLED("math.enabled"),
 
     WHO_AM_I_TIME("who-am-i.time"),
     WHO_AM_I_WORDS("who-am-i.words"),
+    WHO_AM_I_ENABLED("who-am-i.enabled"),
 
     WORD_STOP_TIME("word-stop.time"),
     WORD_STOP_MOBS("word-stop.mobs"),
+    WORD_STOP_ENABLED("word-stop.enabled"),
 
     WORD_GUESSER_TIME("word-guesser.time"),
     WORD_GUESSER_WORDS("word-guesser.words"),
+    WORD_GUESSER_ENABLED("word-guesser.enabled"),
 
     RANDOM_CHARACTERS_TIME("random-characters.time"),
     RANDOM_CHARACTERS_LENGTH("random-characters.length"),
+    RANDOM_CHARACTERS_ENABLED("random-characters.enabled"),
 
     REVERSE_TIME("reverse.time"),
     REVERSE_WORDS("reverse.words"),
+    REVERSE_ENABLED("reverse.enabled"),
 
     FILL_OUT_TIME("fill-out.time"),
     FILL_OUT_WORDS("fill-out.words"),
+    FILL_OUT_ENABLED("fill-out.enabled"),
 
     TOAST_ENABLED("toast.enabled"),
     TOAST_MESSAGE("toast.message"),

@@ -5,8 +5,12 @@ import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
 import com.mongenscave.mcchatgame.manager.GameManager;
+import org.bukkit.Bukkit;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -53,13 +57,48 @@ public class AutoGameProcessor {
 
         GameManager.removeInactiveGames();
 
+        int onlinePlayers = Bukkit.getOnlinePlayers().size();
+        int minPlayers = ConfigKeys.MIN_PLAYERS.getInt();
+
+        if (onlinePlayers < minPlayers) {
+            scheduleNewTask();
+            return;
+        }
+
         if (activeGames == 0 && (lastGameEnd == 0 || currentTime - lastGameEnd >= cooldownPeriod)) startRandomGame();
 
         scheduleNewTask();
     }
 
     private void startRandomGame() {
-        GameType randomType = GAME_POOL.get(random.nextInt(GAME_POOL.size()));
+        List<GameType> enabledGames = getEnabledGames();
+
+        if (enabledGames.isEmpty()) return;
+
+        GameType randomType = enabledGames.get(random.nextInt(enabledGames.size()));
         GameManager.startGame(randomType);
+    }
+
+    @NotNull
+    private List<GameType> getEnabledGames() {
+        List<GameType> enabledGames = Collections.synchronizedList(new ArrayList<>());
+
+        for (GameType gameType : GAME_POOL) {
+            boolean isEnabled = false;
+
+            switch (gameType) {
+                case MATH -> isEnabled = ConfigKeys.MATH_ENABLED.getBoolean();
+                case RANDOM_CHARACTERS -> isEnabled = ConfigKeys.RANDOM_CHARACTERS_ENABLED.getBoolean();
+                case WHO_AM_I -> isEnabled = ConfigKeys.WHO_AM_I_ENABLED.getBoolean();
+                case WORD_STOP -> isEnabled = ConfigKeys.WORD_STOP_ENABLED.getBoolean();
+                case WORD_GUESSER -> isEnabled = ConfigKeys.WORD_GUESSER_ENABLED.getBoolean();
+                case REVERSE -> isEnabled = ConfigKeys.REVERSE_ENABLED.getBoolean();
+                case FILL_OUT -> isEnabled = ConfigKeys.FILL_OUT_ENABLED.getBoolean();
+            }
+
+            if (isEnabled) enabledGames.add(gameType);
+        }
+
+        return enabledGames;
     }
 }

@@ -15,7 +15,6 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
 public class GameManager {

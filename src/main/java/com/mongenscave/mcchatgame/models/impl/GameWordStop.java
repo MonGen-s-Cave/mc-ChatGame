@@ -10,7 +10,6 @@ import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
