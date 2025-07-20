@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.hooks.plugins.PlaceholderAPI;
 import com.mongenscave.mcchatgame.listener.GameListener;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
+import com.mongenscave.mcchatgame.update.UpdateChecker;
 import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import com.mongenscave.mcchatgame.utils.RegisterUtils;
@@ -33,6 +34,7 @@ public final class McChatGame extends ZapperJavaPlugin {
     @Getter Database database;
     @Getter Executor mainThreadExecutor;
     @Getter AutoGameProcessor gameProcessor;
+    @Getter UpdateChecker updateChecker;
     Config config;
 
     @Override
@@ -57,6 +59,8 @@ public final class McChatGame extends ZapperJavaPlugin {
         RegisterUtils.registerCommands();
 
         new Metrics(this, 26553);
+        updateChecker = new UpdateChecker(8147);
+
         LoggerUtils.printStartup();
     }
 

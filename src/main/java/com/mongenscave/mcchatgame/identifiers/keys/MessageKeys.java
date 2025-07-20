@@ -42,7 +42,9 @@ public enum MessageKeys {
     RANDOM_CHARACTERS_NO_WIN("messages.random-characters-no-win"),
     CRAFTING_NO_WIN("messages.crafting-no-win"),
 
-    NO_CRAFTING_GAME("messages.no-crafting-game");
+    NO_CRAFTING_GAME("messages.no-crafting-game"),
+
+    UPDATE_NOTIFY("messages.update-notify");
 
     private final String path;
     private static final Config config = McChatGame.getInstance().getLanguage();

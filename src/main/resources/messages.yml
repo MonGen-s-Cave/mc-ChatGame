@@ -102,3 +102,4 @@ messages:
   fill-out-no-win: "%prefix% &cNo one guessed the correct answer!"
   random-characters-no-win: "%prefix% &cNo one guessed the correct answer!"
   no-crafting-game: "%prefix% &cNo crafting game is active!"
+  update-notify: "%prefix% &aA new update for the plugin is now available! &8(&c{your} &f→ &e{latest}&8)"
