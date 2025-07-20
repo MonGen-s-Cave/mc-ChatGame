@@ -182,7 +182,7 @@ public class GameCrafting extends GameHandler implements Listener {
                             .replace("{time}", formattedTime)
                             .replace("{player}", player.getName()));
 
-                    handleWin(player);
+                    handlePlayerWin(player);
                     stop();
                 }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 

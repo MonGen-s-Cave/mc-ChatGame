@@ -64,10 +64,7 @@ public class PlaceholderAPI {
 
                 case "fastest_time" -> {
                     double time = McChatGame.getInstance().getDatabase().getTime(player).join();
-                    // Ha nincs még feljegyezett idő (999999.99), akkor 00.00-t adunk vissza
-                    if (time >= 999999.99) {
-                        return "00.00";
-                    }
+                    if (time >= 999999.99) return "00.00";
                     return String.format("%.2f", time);
                 }
 

@@ -2,6 +2,7 @@ package com.mongenscave.mcchatgame.managers;
 
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
+import com.mongenscave.mcchatgame.processor.MessageProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
 import lombok.Getter;
@@ -111,8 +112,8 @@ public class StreakManager {
         if (reachEnabled) {
             List<String> messages = plugin.getConfig().getStringList(basePath + "reach-message.message");
             for (String message : messages) {
-                GameUtils.broadcast(message.replace("{player}", player.getName())
-                        .replace("{streak}", String.valueOf(streakValue)));
+                GameUtils.broadcast(MessageProcessor.process(message.replace("{player}", player.getName())
+                        .replace("{streak}", String.valueOf(streakValue))));
             }
         }
 
@@ -131,8 +132,8 @@ public class StreakManager {
         if (lostEnabled) {
             List<String> messages = plugin.getConfig().getStringList(basePath + "lost-message.message");
             for (String message : messages) {
-                GameUtils.broadcast(message.replace("{player}", player.getName())
-                        .replace("{streak}", String.valueOf(streakValue)));
+                GameUtils.broadcast(MessageProcessor.process(message.replace("{player}", player.getName())
+                        .replace("{streak}", String.valueOf(streakValue))));
             }
         }
     }
