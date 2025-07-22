@@ -62,4 +62,19 @@ public class GameManager {
 
         ACTIVE_GAMES.entrySet().removeIf(entry -> entry.getValue().getState() == GameState.INACTIVE);
     }
+
+    public static void stopAllGames() {
+        ACTIVE_GAMES.values().forEach(GameHandler::stop);
+        ACTIVE_GAMES.clear();
+        lastGameEndTime = System.currentTimeMillis();
+    }
+
+    public static void stopGame(@NotNull GameType type) {
+        GameHandler handler = ACTIVE_GAMES.get(type);
+        if (handler != null) {
+            handler.stop();
+            ACTIVE_GAMES.remove(type);
+            lastGameEndTime = System.currentTimeMillis();
+        }
+    }
 }

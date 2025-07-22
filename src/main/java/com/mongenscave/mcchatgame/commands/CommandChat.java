@@ -1,7 +1,9 @@
 package com.mongenscave.mcchatgame.commands;
 
 import com.mongenscave.mcchatgame.McChatGame;
+import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
+import com.mongenscave.mcchatgame.managers.GameManager;
 import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.models.impl.GameCrafting;
 import org.bukkit.command.CommandSender;
@@ -20,6 +22,13 @@ public class CommandChat implements OrphanCommand {
         plugin.getConfiguration().reload();
         plugin.getLanguage().reload();
         sender.sendMessage(MessageKeys.RELOAD.getMessage());
+    }
+
+    @Subcommand("start")
+    @CommandPermission("chatgame.start")
+    public void start(@NotNull CommandSender sender, @NotNull GameType type) {
+        GameManager.stopAllGames();
+        GameManager.startGame(type);
     }
 
     @Subcommand("crafting")
