@@ -29,6 +29,7 @@ import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,10 +40,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("deprecation")
 public class GameCrafting extends GameHandler implements Listener {
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
+    private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String targetItem;
     private List<String> requiredItems;
@@ -80,6 +83,7 @@ public class GameCrafting extends GameHandler implements Listener {
         this.requiredItems = new ArrayList<>(itemsToPlace);
         this.gameData = targetItem;
         this.startTime = System.currentTimeMillis();
+        this.winnerDetermined.set(false);
         this.setAsActive();
 
         Bukkit.getPluginManager().registerEvents(this, McChatGame.getInstance());
@@ -111,6 +115,12 @@ public class GameCrafting extends GameHandler implements Listener {
     @Override
     public long getStartTime() {
         return startTime;
+    }
+
+    @Override
+    protected void cleanup() {
+        winnerDetermined.set(false);
+        super.cleanup();
     }
 
     public void openCraftingMenu(@NotNull Player player) {
@@ -147,7 +157,7 @@ public class GameCrafting extends GameHandler implements Listener {
             ItemStack resultItem = event.getCurrentItem();
             if (resultItem != null && resultItem.getType() == Material.valueOf(targetItem)) {
                 event.setCancelled(true);
-                handleWin(player);
+                if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) handleWin(player);
                 return;
             } else {
                 event.setCancelled(true);
@@ -155,8 +165,8 @@ public class GameCrafting extends GameHandler implements Listener {
             }
         }
 
-        Bukkit.getScheduler().runTaskLater(McChatGame.getInstance(), () -> {
-            if (state == GameState.ACTIVE) updateCraftingResult(clickedInv);
+        McChatGame.getInstance().getScheduler().runTaskLater(() -> {
+            if (state == GameState.ACTIVE && !winnerDetermined.get()) updateCraftingResult(clickedInv);
         }, 1L);
     }
 
@@ -174,6 +184,8 @@ public class GameCrafting extends GameHandler implements Listener {
         double timeTaken = (endTime - startTime) / 1000.0;
         String formattedTime = String.format("%.2f", timeTaken);
 
+        if (timeoutTask != null) timeoutTask.cancel();
+
         McChatGame.getInstance().getDatabase().incrementWin(player)
                 .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                 .thenAcceptAsync(v -> {
@@ -183,7 +195,7 @@ public class GameCrafting extends GameHandler implements Listener {
                             .replace("{player}", player.getName()));
 
                     handlePlayerWin(player);
-                    stop();
+                    cleanup();
                 }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 
         PlayerUtils.sendToast(player, ConfigKeys.TOAST_MESSAGE, ConfigKeys.TOAST_MATERIAL, ConfigKeys.TOAST_ENABLED);
@@ -192,21 +204,21 @@ public class GameCrafting extends GameHandler implements Listener {
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
-            if (state == GameState.ACTIVE) {
+            if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
                 GameUtils.broadcast(MessageKeys.CRAFTING_NO_WIN.getMessage());
                 handleGameTimeout();
-                stop();
+                cleanup();
             }
         }, ConfigKeys.CRAFTING_TIME.getInt() * 20L);
     }
 
     private void updateCraftingResult(@NotNull Inventory inventory) {
-        if (state != GameState.ACTIVE) return;
+        if (state != GameState.ACTIVE || winnerDetermined.get()) return;
 
         ItemStack[] matrix = new ItemStack[9];
 
         for (int i = 1; i <= 9; i++) {
-            matrix[i-1] = inventory.getItem(i);
+            matrix[i - 1] = inventory.getItem(i);
         }
 
         for (Recipe recipe : Bukkit.getRecipesFor(new ItemStack(Material.valueOf(targetItem)))) {
@@ -248,11 +260,8 @@ public class GameCrafting extends GameHandler implements Listener {
                 ItemStack required = ingredients.get(c);
                 ItemStack actual = matrix[matrixIndex];
 
-                if (c == ' ') {
-                    if (actual != null && actual.getType() != Material.AIR) return false;
-                } else {
-                    if (!itemsMatch(actual, required)) return false;
-                }
+                if (c == ' ') if (actual != null && actual.getType() != Material.AIR) return false;
+                else if (!itemsMatch(actual, required)) return false;
             }
         }
 
@@ -298,7 +307,7 @@ public class GameCrafting extends GameHandler implements Listener {
         return provided.isEmpty();
     }
 
-    private boolean itemsMatch(ItemStack actual, ItemStack required) {
+    private boolean itemsMatch(@Nullable ItemStack actual, @Nullable ItemStack required) {
         if (actual == null && required == null) return true;
         if (actual == null || required == null) return false;
 

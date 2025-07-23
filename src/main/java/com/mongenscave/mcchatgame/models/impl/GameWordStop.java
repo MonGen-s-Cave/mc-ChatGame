@@ -16,9 +16,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameWordStop extends GameHandler {
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
+    private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String correctMob;
     private long startTime;
@@ -36,6 +38,7 @@ public class GameWordStop extends GameHandler {
         this.correctMob = mobData[1];
         this.gameData = mobData[0];
         this.startTime = System.currentTimeMillis();
+        this.winnerDetermined.set(false);
         this.setAsActive();
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
@@ -60,12 +63,14 @@ public class GameWordStop extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE) return;
+        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(correctMob)) {
             long endTime = System.currentTimeMillis();
             double timeTaken = (endTime - startTime) / 1000.0;
             String formattedTime = String.format("%.2f", timeTaken);
+
+            if (timeoutTask != null) timeoutTask.cancel();
 
             McChatGame.getInstance().getDatabase().incrementWin(player)
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
@@ -81,7 +86,15 @@ public class GameWordStop extends GameHandler {
 
             PlayerUtils.sendToast(player, ConfigKeys.TOAST_MESSAGE, ConfigKeys.TOAST_MATERIAL, ConfigKeys.TOAST_ENABLED);
             GameUtils.playSoundToWinner(player, ConfigKeys.SOUND_WIN_ENABLED, ConfigKeys.SOUND_WIN_SOUND);
+        } else {
+            winnerDetermined.set(false);
         }
+    }
+
+    @Override
+    protected void cleanup() {
+        winnerDetermined.set(false);
+        super.cleanup();
     }
 
     @Nullable
@@ -98,7 +111,7 @@ public class GameWordStop extends GameHandler {
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
-            if (state == GameState.ACTIVE) {
+            if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
                 GameUtils.broadcast(MessageKeys.WORD_STOP_NO_WIN.getMessage());
                 handleGameTimeout();
                 cleanup();

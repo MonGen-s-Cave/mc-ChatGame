@@ -18,9 +18,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameFillOut extends GameHandler {
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
+    private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String correctAnswer;
     private long startTime;
@@ -40,6 +42,7 @@ public class GameFillOut extends GameHandler {
         this.correctAnswer = originalWord;
         this.gameData = filled;
         this.startTime = System.currentTimeMillis();
+        this.winnerDetermined.set(false);
         this.setAsActive();
 
         announceFillOut(filled);
@@ -57,12 +60,14 @@ public class GameFillOut extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE) return;
+        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(correctAnswer)) {
             long endTime = System.currentTimeMillis();
             double timeTaken = (endTime - startTime) / 1000.0;
             String formattedTime = String.format("%.2f", timeTaken);
+
+            if (timeoutTask != null) timeoutTask.cancel();
 
             McChatGame.getInstance().getDatabase().incrementWin(player)
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
@@ -78,12 +83,18 @@ public class GameFillOut extends GameHandler {
 
             PlayerUtils.sendToast(player, ConfigKeys.TOAST_MESSAGE, ConfigKeys.TOAST_MATERIAL, ConfigKeys.TOAST_ENABLED);
             GameUtils.playSoundToWinner(player, ConfigKeys.SOUND_WIN_ENABLED, ConfigKeys.SOUND_WIN_SOUND);
-        }
+        } winnerDetermined.set(false);
     }
 
     @Override
     public long getStartTime() {
         return startTime;
+    }
+
+    @Override
+    protected void cleanup() {
+        winnerDetermined.set(false);
+        super.cleanup();
     }
 
     @NotNull
@@ -112,7 +123,7 @@ public class GameFillOut extends GameHandler {
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
-            if (state == GameState.ACTIVE) {
+            if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
                 GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage());
                 handleGameTimeout();
                 cleanup();
