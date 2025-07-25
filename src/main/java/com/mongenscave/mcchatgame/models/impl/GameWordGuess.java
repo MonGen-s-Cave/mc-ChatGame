@@ -98,9 +98,24 @@ public class GameWordGuess extends GameHandler {
 
     @NotNull
     private String scrambleWord(@NotNull String word) {
-        List<Character> chars = Collections.synchronizedList(new ArrayList<>(word.chars()
+        String[] words = word.split(" ");
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++) {
+            if (i > 0) result.append(" ");
+            result.append(scrambleSingleWord(words[i]));
+        }
+
+        return result.toString();
+    }
+
+    @NotNull
+    private String scrambleSingleWord(@NotNull String word) {
+        if (word.length() <= 1) return word;
+
+        List<Character> chars = new ArrayList<>(word.chars()
                 .mapToObj(c -> (char) c)
-                .toList()));
+                .toList());
 
         Collections.shuffle(chars);
         StringBuilder sb = new StringBuilder();
