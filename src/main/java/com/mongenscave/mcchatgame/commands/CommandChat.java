@@ -34,6 +34,7 @@ public class CommandChat implements OrphanCommand {
     @Subcommand("crafting")
     public void crafting(@NotNull Player player) {
         GameHandler activeGame = GameHandler.getCurrentActiveGame();
+
         if (!(activeGame instanceof GameCrafting craftingGame)) {
             player.sendMessage(MessageKeys.NO_CRAFTING_GAME.getMessage());
             return;

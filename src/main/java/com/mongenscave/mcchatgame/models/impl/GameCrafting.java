@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.processor.MessageProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import net.coma112.easiermessages.EasierMessages;
@@ -20,8 +21,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -98,11 +101,11 @@ public class GameCrafting extends GameHandler implements Listener {
 
         for (UUID playerId : participatingPlayers) {
             Player player = Bukkit.getPlayer(playerId);
+
             if (player != null && player.isOnline()) player.closeInventory();
         }
 
         HandlerList.unregisterAll(this);
-
         cleanup();
 
         AutoGameProcessor gameProcessor = McChatGame.getInstance().getGameProcessor();
@@ -128,21 +131,25 @@ public class GameCrafting extends GameHandler implements Listener {
 
         participatingPlayers.add(player.getUniqueId());
 
-        Inventory craftingInv = Bukkit.createInventory(null, InventoryType.WORKBENCH, MessageProcessor.process(ConfigKeys.CRAFTING_TITLE.getString().replace("{item}", targetItem)));
+        Inventory craftingInv = Bukkit.createInventory(null, InventoryType.WORKBENCH,
+                MessageProcessor.process(ConfigKeys.CRAFTING_TITLE.getString().replace("{item}", targetItem)));
 
         List<String> shuffledItems = new ArrayList<>(requiredItems);
         Collections.shuffle(shuffledItems);
 
         for (int i = 0; i < Math.min(shuffledItems.size(), 9); i++) {
-            Material material = Material.valueOf(shuffledItems.get(i));
-            ItemStack item = new ItemStack(material, 1);
-            craftingInv.setItem(i + 1, item);
+            try {
+                Material material = Material.valueOf(shuffledItems.get(i));
+                ItemStack item = new ItemStack(material, 1);
+                craftingInv.setItem(i + 1, item);
+            } catch (IllegalArgumentException exception) {
+                LoggerUtils.error(exception.getMessage());
+            }
         }
 
         playerInventories.put(player.getUniqueId(), craftingInv);
         player.openInventory(craftingInv);
     }
-
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -151,22 +158,69 @@ public class GameCrafting extends GameHandler implements Listener {
         if (!participatingPlayers.contains(player.getUniqueId())) return;
 
         Inventory clickedInv = event.getClickedInventory();
-        if (clickedInv == null || !playerInventories.containsValue(clickedInv)) return;
+        Inventory topInv = event.getView().getTopInventory();
+
+        if (!playerInventories.containsValue(topInv)) return;
+
+        if (clickedInv != topInv) {
+            event.setCancelled(true);
+            return;
+        }
+
+        InventoryAction action = event.getAction();
+        if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
+                action == InventoryAction.COLLECT_TO_CURSOR ||
+                action == InventoryAction.HOTBAR_MOVE_AND_READD ||
+                action == InventoryAction.HOTBAR_SWAP ||
+                action == InventoryAction.CLONE_STACK) {
+            event.setCancelled(true);
+            return;
+        }
 
         if (event.getSlot() == 0) {
             ItemStack resultItem = event.getCurrentItem();
-            if (resultItem != null && resultItem.getType() == Material.valueOf(targetItem)) {
-                event.setCancelled(true);
+
+            if (resultItem != null && resultItem.getType().toString().equals(targetItem)) {
                 if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) handleWin(player);
-                return;
-            } else {
+            }
+
+            event.setCancelled(true);
+            return;
+        }
+
+        if (event.getSlot() >= 1 && event.getSlot() <= 9) {
+            if (event.isShiftClick()) {
                 event.setCancelled(true);
                 return;
             }
+
+            McChatGame.getInstance().getScheduler().runTaskLater(() -> {
+                if (state == GameState.ACTIVE && !winnerDetermined.get()) updateCraftingResult(topInv);
+            }, 1L);
+        } else event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (state != GameState.ACTIVE) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (!participatingPlayers.contains(player.getUniqueId())) return;
+
+        Inventory topInv = event.getView().getTopInventory();
+        if (!playerInventories.containsValue(topInv)) return;
+
+        Set<Integer> dragSlots = event.getRawSlots();
+
+        boolean affectsInvalidSlots = dragSlots.stream().anyMatch(slot -> slot < 1 || slot > 9 || slot >= topInv.getSize()
+        );
+
+        if (affectsInvalidSlots) {
+            event.setCancelled(true);
+            return;
         }
 
         McChatGame.getInstance().getScheduler().runTaskLater(() -> {
-            if (state == GameState.ACTIVE && !winnerDetermined.get()) updateCraftingResult(clickedInv);
+            if (state == GameState.ACTIVE && !winnerDetermined.get()) updateCraftingResult(topInv);
         }, 1L);
     }
 
@@ -174,6 +228,13 @@ public class GameCrafting extends GameHandler implements Listener {
     public void onInventoryClose(final @NotNull InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player player)) return;
         if (!participatingPlayers.contains(player.getUniqueId())) return;
+
+        Inventory craftingInv = playerInventories.get(player.getUniqueId());
+        if (craftingInv != null) {
+            for (int i = 0; i < craftingInv.getSize(); i++) {
+                craftingInv.setItem(i, null);
+            }
+        }
 
         participatingPlayers.remove(player.getUniqueId());
         playerInventories.remove(player.getUniqueId());
@@ -185,6 +246,8 @@ public class GameCrafting extends GameHandler implements Listener {
         String formattedTime = String.format("%.2f", timeTaken);
 
         if (timeoutTask != null) timeoutTask.cancel();
+
+        player.closeInventory();
 
         McChatGame.getInstance().getDatabase().incrementWin(player)
                 .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
@@ -221,18 +284,23 @@ public class GameCrafting extends GameHandler implements Listener {
             matrix[i - 1] = inventory.getItem(i);
         }
 
-        for (Recipe recipe : Bukkit.getRecipesFor(new ItemStack(Material.valueOf(targetItem)))) {
-            if (recipe instanceof ShapedRecipe shapedRecipe) {
-                if (matchesShapedRecipe(matrix, shapedRecipe)) {
-                    inventory.setItem(0, new ItemStack(Material.valueOf(targetItem), 1));
-                    return;
-                }
-            } else if (recipe instanceof ShapelessRecipe shapelessRecipe) {
-                if (matchesShapelessRecipe(matrix, shapelessRecipe)) {
-                    inventory.setItem(0, new ItemStack(Material.valueOf(targetItem), 1));
-                    return;
+        try {
+            Material targetMaterial = Material.valueOf(targetItem);
+            for (Recipe recipe : Bukkit.getRecipesFor(new ItemStack(targetMaterial))) {
+                if (recipe instanceof ShapedRecipe shapedRecipe) {
+                    if (matchesShapedRecipe(matrix, shapedRecipe)) {
+                        inventory.setItem(0, new ItemStack(targetMaterial, 1));
+                        return;
+                    }
+                } else if (recipe instanceof ShapelessRecipe shapelessRecipe) {
+                    if (matchesShapelessRecipe(matrix, shapelessRecipe)) {
+                        inventory.setItem(0, new ItemStack(targetMaterial, 1));
+                        return;
+                    }
                 }
             }
+        } catch (IllegalArgumentException exception) {
+            LoggerUtils.error(exception.getMessage());
         }
 
         inventory.setItem(0, null);
@@ -269,7 +337,8 @@ public class GameCrafting extends GameHandler implements Listener {
             int row = i / 3;
             int col = i % 3;
 
-            boolean isInShape = (row >= offsetRow && row < offsetRow + shape.length && col >= offsetCol && col < offsetCol + shape[0].length());
+            boolean isInShape = (row >= offsetRow && row < offsetRow + shape.length &&
+                    col >= offsetCol && col < offsetCol + shape[0].length());
 
             if (!isInShape) {
                 ItemStack item = matrix[i];
@@ -280,7 +349,7 @@ public class GameCrafting extends GameHandler implements Listener {
         return true;
     }
 
-    private boolean matchesShapelessRecipe(@NotNull ItemStack[] matrix, @NotNull org.bukkit.inventory.ShapelessRecipe recipe) {
+    private boolean matchesShapelessRecipe(@NotNull ItemStack[] matrix, @NotNull ShapelessRecipe recipe) {
         List<ItemStack> required = new ArrayList<>(recipe.getIngredientList());
         List<ItemStack> provided = new ArrayList<>();
 
