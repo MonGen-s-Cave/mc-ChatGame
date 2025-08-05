@@ -87,6 +87,7 @@ public class AutoGameProcessor {
                 case REVERSE -> isEnabled = ConfigKeys.REVERSE_ENABLED.getBoolean();
                 case FILL_OUT -> isEnabled = ConfigKeys.FILL_OUT_ENABLED.getBoolean();
                 case CRAFTING -> isEnabled = ConfigKeys.CRAFTING_ENABLED.getBoolean();
+                case HANGMAN -> isEnabled = ConfigKeys.HANGMAN_ENABLED.getBoolean();
             }
 
             if (isEnabled) enabledGames.add(gameType);

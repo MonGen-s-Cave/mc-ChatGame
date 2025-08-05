@@ -38,6 +38,16 @@ public enum ConfigKeys {
     RANDOM_CHARACTERS_LENGTH("random-characters.length"),
     RANDOM_CHARACTERS_ENABLED("random-characters.enabled"),
 
+    HANGMAN_TIME("hangman.time"),
+    HANGMAN_WORDS("hangman.words"),
+    HANGMAN_ENABLED("hangman.enabled"),
+    HANGMAN_ONLY_ONCE("hangman.only-once"),
+    HANGMAN_PLACEHOLDERS("hangman.placeholders"),
+    HANGMAN_FOUND("hangman.found"),
+    HANGMAN_STAGE_IN("hangman.stage-in"),
+    HANGMAN_STAGE_OUT("hangman.stage-out"),
+    HANGMAN_STAGES_ENABLED("hangman.stages-enabled"),
+
     REVERSE_TIME("reverse.time"),
     REVERSE_WORDS("reverse.words"),
     REVERSE_ENABLED("reverse.enabled"),
@@ -69,6 +79,7 @@ public enum ConfigKeys {
     PLACEHOLDER_WORD_GUESS("placeholders.word-guess"),
     PLACEHOLDER_WORD_STOP("placeholders.word-stop"),
     PLACEHOLDER_CRAFTING("placeholders.crafting"),
+    PLACEHOLDER_HANGMAN("placeholders.hangman"),
     PLACEHOLDER_NO_GAMES("placeholders.no-game"),
 
     STREAKS_ENABLED("streaks.enabled"),

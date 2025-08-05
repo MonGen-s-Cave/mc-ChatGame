@@ -8,5 +8,6 @@ public enum GameType {
     WORD_STOP,
     FILL_OUT,
     REVERSE,
-    CRAFTING
+    CRAFTING,
+    HANGMAN
 }

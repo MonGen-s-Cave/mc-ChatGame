@@ -5,6 +5,7 @@ import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.models.impl.GameCrafting;
 import com.mongenscave.mcchatgame.models.impl.GameFillOut;
+import com.mongenscave.mcchatgame.models.impl.GameHangman;
 import com.mongenscave.mcchatgame.models.impl.GameMath;
 import com.mongenscave.mcchatgame.models.impl.GameRandomCharacters;
 import com.mongenscave.mcchatgame.models.impl.GameReverse;
@@ -34,6 +35,7 @@ public class GameManager {
             case REVERSE -> new GameReverse();
             case FILL_OUT -> new GameFillOut();
             case CRAFTING -> new GameCrafting();
+            case HANGMAN -> new GameHangman();
         };
 
         handler.start();
