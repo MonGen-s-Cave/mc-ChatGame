@@ -45,6 +45,7 @@ public class GameHangman extends GameHandler {
         this.wrongGuesses = 0;
         this.startTime = System.currentTimeMillis();
         this.gameWon = false;
+        this.gameData = buildDisplayWord();
         this.setAsActive();
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
@@ -82,6 +83,7 @@ public class GameHangman extends GameHandler {
         playersWhoGuessed.add(player);
 
         if (correctWord.contains(String.valueOf(letter))) {
+            this.gameData = buildDisplayWord();
             announceGame();
 
             if (isWordComplete()) {
@@ -214,7 +216,7 @@ public class GameHangman extends GameHandler {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && !gameWon) {
                 GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage()
-                        .replace("{word}", correctWord)));
+                        .replace("{answer}", correctWord)));
                 handleGameTimeout();
                 cleanup();
             }

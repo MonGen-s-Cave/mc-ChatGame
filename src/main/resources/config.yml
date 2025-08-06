@@ -1,3 +1,7 @@
+# Docs: https://docs.mongenscave.com/free-products/mc-chatgame
+
+
+# BASIC SETTINGS
 aliases:
   - "chatgame"
   - "mcchatgame"
@@ -9,6 +13,8 @@ rewards:
 time-between-games: 20
 min-players: 1
 
+
+# GAMES & OPERATIONS
 random-characters:
   enabled: false
   time: 60
@@ -144,6 +150,26 @@ crafting:
         - "STICK"
         - "IRON_INGOT"
 
+hangman:
+  enabled: true
+  time: 120
+  stages-enabled: true
+  stages:
+    '1': ╔══╗
+    '2': ║     ║
+    '3': ║     O
+    '4': ║    /|\
+    '5': ║    / \
+    '6': ╚════
+  only-once: false
+  words: # Don't recommend too long words, might be long for the vanilla chat
+    - alma
+  placeholders: '&7&l_ '
+  found: '&a&l{letter} '
+  stage-in: '&c'
+  stage-out: '&7'
+
+# FEATURE(S)
 streaks:
   enabled: true
   5:
@@ -174,6 +200,8 @@ streaks:
     commands:
       - "give {player} diamond 5"
 
+# ADDONS
+
 database:
   type: "h2" # H2, MySQL
 
@@ -188,26 +216,6 @@ toast:
   enabled: true
   message: "&a&lSUCCESS GUESS!"
   material: "BOOK"
-
-hangman:
-  enabled: true
-  time: 120
-  stages-enabled: true
-  stages:
-    '1': ╔══╗
-    '2': ║     ║
-    '3': ║     O
-    '4': ║    /|\
-    '5': ║    / \
-    '6': ╚════
-  only-once: false
-  words: # Don't recommend too long words, might be long for the vanilla chat
-    - alma
-  placeholders: '&7&l_ '
-  found: '&a&l{letter} '
-  stage-in: '&c'
-  stage-out: '&7'
-
 
 sounds:
   start:

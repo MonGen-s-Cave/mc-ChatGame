@@ -1,3 +1,12 @@
+# Docs: https://docs.mongenscave.com/free-products/mc-chatgame
+#
+# At the no-win messages you can apply {answer} to get the correct answer!
+# Except:
+# Random Characters
+# Crafting
+#
+
+
 prefix: "&#42f598[ChatGame]"
 
 messages:

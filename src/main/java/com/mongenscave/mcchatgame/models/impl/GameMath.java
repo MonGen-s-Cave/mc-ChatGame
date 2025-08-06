@@ -112,7 +112,7 @@ public final class GameMath extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage());
+                GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage().replace("{answer}", correctAnswer));
                 handleGameTimeout();
                 cleanup();
             }
