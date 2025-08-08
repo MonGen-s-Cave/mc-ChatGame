@@ -23,29 +23,21 @@ public class LoggerUtils {
     }
 
     public void printStartup() {
-        String color = "\u001B[32m";
+        String main = "\u001B[38;2;66;245;152m";
         String reset = "\u001B[0m";
         String software = McChatGame.getInstance().getServer().getName();
         String version = McChatGame.getInstance().getServer().getVersion();
 
-        String asciiArt = color + "   _____ _           _    _____                      \n" + reset +
-                color + "  / ____| |         | |  / ____|                     \n" + reset +
-                color + " | |    | |__   __ _| |_| |  __  __ _ _ __ ___   ___ \n" + reset +
-                color + " | |    | '_ \\ / _` | __| | |_ |/ _` | '_ ` _ \\ / _ \\\n" + reset +
-                color + " | |____| | | | (_| | |_| |__| | (_| | | | | | |  __/\\\n" + reset +
-                color + " \\_____|_| |_|\\__,_|\\__|\\_____|\\__,_|_| |_| |_|\\___|" + reset;
-
         info("");
-        String[] lines = asciiArt.split("\n");
-
-        for (String line : lines) {
-            info(line);
-        }
-
+        info("{}      ____ _   _    _  _____ ____    _    __  __ _____ {}", main, reset);
+        info("{}    / ___| | | |  / \\|_   _/ ___|  / \\  |  \\/  | ____| {}", main, reset);
+        info("{}   | |   | |_| | / _ \\ | || |  _  / _ \\ | |\\/| |  _|   {}", main, reset);
+        info("{}   | |___|  _  |/ ___ \\| || |_| |/ ___ \\| |  | | |___  {}", main, reset);
+        info("{}    \\____|_| |_/_/   \\_\\_| \\____/_/   \\_\\_|  |_|_____| {}", main, reset);
         info("");
-        info("{}   The plugin successfully started.{}", color, reset);
-        info("{}   mc-Treasure {} {}{}", color, software, version, reset);
-        info("{}   Discord @ dc.mongenscave.com{}", color, reset);
+        info("{}   The plugin successfully started.{}", main, reset);
+        info("{}   mc-ChatGame {} {}{}", main, software, version, reset);
+        info("{}   Discord @ dc.mongenscave.com{}", main, reset);
         info("");
     }
 }
