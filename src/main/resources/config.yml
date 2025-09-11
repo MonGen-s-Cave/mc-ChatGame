@@ -241,4 +241,4 @@ placeholders:
   word-stop: "&fWord Guess &8» &#42f598{word} &8(&#42f598{time}&8)"
   hangman: "&fHangman &8» &#42f598{word} &8(&#42f598{time}&8)"
   crafting: "&fCrafting &8» &#42f598{word} &8(&#42f598{time}&8)"
-  range: "&fRange &8» &#42f598{word} &8(&#42f598{time}&8)"
+  range: "&fRange &8» &#42f5980 ↔ 20 &8(&#42f598{time}&8)"
