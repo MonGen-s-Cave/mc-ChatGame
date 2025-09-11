@@ -1,5 +1,5 @@
 name: mc-ChatGame
-version: '1.0.8'
+version: '1.1.0'
 main: com.mongenscave.mcchatgame.McChatGame
 api-version: '1.18'
 authors: [ coma112 ]
