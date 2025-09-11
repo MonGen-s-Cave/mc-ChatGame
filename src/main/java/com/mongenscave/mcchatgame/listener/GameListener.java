@@ -19,23 +19,16 @@ public class GameListener implements Listener {
         String message = event.getMessage().trim(); // Trim whitespace
         Database database = McChatGame.getInstance().getDatabase();
 
-        // Create player in database if they don't exist
         database.exists(player).thenAccept(exists -> {
             if (!exists) database.createPlayer(player);
         });
 
-        // Remove command prefix if present
-        if (message.startsWith("!")) {
-            message = message.substring(1);
-        }
+        if (message.startsWith("!")) message = message.substring(1);
 
         GameHandler currentGame = GameHandler.getCurrentActiveGame();
 
-        // For hangman, only process single character inputs
         if (currentGame instanceof GameHangman) {
-            if (message.length() != 1 || !Character.isLetter(message.charAt(0))) {
-                return; // Invalid input for hangman
-            }
+            if (message.length() != 1 || !Character.isLetter(message.charAt(0))) return;
         }
 
         String finalMessage = message;

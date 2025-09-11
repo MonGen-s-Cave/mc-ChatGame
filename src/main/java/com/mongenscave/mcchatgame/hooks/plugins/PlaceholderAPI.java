@@ -116,6 +116,7 @@ public class PlaceholderAPI {
                 case "GameWordStop" -> ConfigKeys.PLACEHOLDER_WORD_STOP.getString();
                 case "GameCrafting" -> ConfigKeys.PLACEHOLDER_CRAFTING.getString();
                 case "GameHangman" -> ConfigKeys.PLACEHOLDER_HANGMAN.getString();
+                case "GameRange" -> ConfigKeys.PLACEHOLDER_RANGE.getString();
                 default -> null;
             };
         }
@@ -148,6 +149,7 @@ public class PlaceholderAPI {
                 case "GameWordStop" -> ConfigKeys.WORD_STOP_TIME.getInt();
                 case "GameCrafting" -> ConfigKeys.CRAFTING_TIME.getInt();
                 case "GameHangman" -> ConfigKeys.HANGMAN_TIME.getInt();
+                case "GameRange" -> ConfigKeys.RANGE_TIME.getInt();
                 default -> 60;
             };
         }

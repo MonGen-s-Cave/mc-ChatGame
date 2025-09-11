@@ -22,6 +22,7 @@ public enum MessageKeys {
     RANDOM_CHARACTERS("messages.random-characters"),
     CRAFTING("messages.crafting"),
     HANGMAN("messages.hangman"),
+    RANGE("messages.range"),
 
     MATH_GAME_WIN("messages.math-game-win"),
     WHO_AM_I_WIN("messages.who-am-i-win"),
@@ -33,6 +34,7 @@ public enum MessageKeys {
     RANDOM_CHARACTERS_WIN("messages.random-characters-win"),
     CRAFTING_WIN("messages.crafting-win"),
     HANGMAN_WIN("messages.hangman-win"),
+    RANGE_WIN("messages.range-win"),
 
     MATH_GAME_NO_WIN("messages.math-game-no-win"),
     WHO_AM_I_NO_WIN("messages.who-am-i-no-win"),
@@ -44,6 +46,7 @@ public enum MessageKeys {
     RANDOM_CHARACTERS_NO_WIN("messages.random-characters-no-win"),
     HANGMAN_NO_WIN("messages.hangman-no-win"),
     CRAFTING_NO_WIN("messages.crafting-no-win"),
+    RANGE_NO_WIN("messages.range-no-win"),
 
     NO_CRAFTING_GAME("messages.no-crafting-game"),
 

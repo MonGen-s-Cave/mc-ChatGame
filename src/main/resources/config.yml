@@ -150,8 +150,13 @@ crafting:
         - "STICK"
         - "IRON_INGOT"
 
-hangman:
+range:
+  time: 10
   enabled: true
+  range: "0-20"
+
+hangman:
+  enabled: false
   time: 120
   stages-enabled: true
   stages:
@@ -236,3 +241,4 @@ placeholders:
   word-stop: "&fWord Guess &8» &#42f598{word} &8(&#42f598{time}&8)"
   hangman: "&fHangman &8» &#42f598{word} &8(&#42f598{time}&8)"
   crafting: "&fCrafting &8» &#42f598{word} &8(&#42f598{time}&8)"
+  range: "&fRange &8» &#42f598{word} &8(&#42f598{time}&8)"

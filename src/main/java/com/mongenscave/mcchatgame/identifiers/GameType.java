@@ -9,5 +9,6 @@ public enum GameType {
     FILL_OUT,
     REVERSE,
     CRAFTING,
-    HANGMAN
+    HANGMAN,
+    RANGE
 }

@@ -61,6 +61,10 @@ public enum ConfigKeys {
     CRAFTING_ENABLED("crafting.enabled"),
     CRAFTING_TITLE("crafting.title"),
 
+    RANGE_TIME("range.time"),
+    RANGE_RANGE("range.range"),
+    RANGE_ENABLED("range.enabled"),
+
     TOAST_ENABLED("toast.enabled"),
     TOAST_MESSAGE("toast.message"),
     TOAST_MATERIAL("toast.material"),
@@ -80,6 +84,7 @@ public enum ConfigKeys {
     PLACEHOLDER_WORD_STOP("placeholders.word-stop"),
     PLACEHOLDER_CRAFTING("placeholders.crafting"),
     PLACEHOLDER_HANGMAN("placeholders.hangman"),
+    PLACEHOLDER_RANGE("placeholders.range"),
     PLACEHOLDER_NO_GAMES("placeholders.no-game"),
 
     STREAKS_ENABLED("streaks.enabled"),

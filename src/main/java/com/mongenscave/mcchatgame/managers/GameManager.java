@@ -8,6 +8,7 @@ import com.mongenscave.mcchatgame.models.impl.GameFillOut;
 import com.mongenscave.mcchatgame.models.impl.GameHangman;
 import com.mongenscave.mcchatgame.models.impl.GameMath;
 import com.mongenscave.mcchatgame.models.impl.GameRandomCharacters;
+import com.mongenscave.mcchatgame.models.impl.GameRange;
 import com.mongenscave.mcchatgame.models.impl.GameReverse;
 import com.mongenscave.mcchatgame.models.impl.GameWhoAmI;
 import com.mongenscave.mcchatgame.models.impl.GameWordGuess;
@@ -36,6 +37,7 @@ public class GameManager {
             case FILL_OUT -> new GameFillOut();
             case CRAFTING -> new GameCrafting();
             case HANGMAN -> new GameHangman();
+            case RANGE -> new GameRange();
         };
 
         handler.start();
