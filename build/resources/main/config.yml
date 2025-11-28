@@ -1,5 +1,31 @@
 # Docs: https://docs.mongenscave.com/free-products/mc-chatgame
 
+# Cross server settings!
+redis:
+  # Enable Redis cross-server synchronization
+  enabled: false
+
+  # Redis server connection
+  host: "localhost"
+  port: 6379
+  password: "" # Leave empty if no password
+  database: 0
+  ssl: false
+  timeout: 2000 # Connection timeout in milliseconds
+
+  # Unique identifier for this server (auto-generated if not set)
+  # Use different IDs for each server in your network
+  server-id: "lobby-1"
+
+  # Redis channel prefix (all servers must use the same prefix)
+  channel-prefix: "mcchatgame"
+
+  # Connection pool settings
+  pool:
+    max-total: 8
+    max-idle: 8
+    min-idle: 0
+    max-wait: 2000
 
 # BASIC SETTINGS
 aliases:

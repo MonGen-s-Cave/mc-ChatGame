@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.mongenscave"
-version = "1.1.0"
+version = "1.1.1"
 
 repositories {
     mavenCentral()
@@ -36,6 +36,7 @@ dependencies {
     zap("com.github.Anon8281:UniversalScheduler:0.1.6")
     zap("dev.dejvokep:boosted-yaml:1.3.6")
     zap("com.h2database:h2:2.3.232")
+    zap("redis.clients:jedis:7.1.0")
 }
 
 java {

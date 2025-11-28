@@ -3,6 +3,7 @@ package com.mongenscave.mcchatgame.models.impl;
 import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameState;
+import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
 import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
 import com.mongenscave.mcchatgame.models.GameHandler;
@@ -94,6 +95,11 @@ public class GameWordGuess extends GameHandler {
     protected void cleanup() {
         winnerDetermined.set(false);
         super.cleanup();
+    }
+
+    @Override
+    protected GameType getGameType() {
+        return GameType.WORD_GUESSER;
     }
 
     @NotNull

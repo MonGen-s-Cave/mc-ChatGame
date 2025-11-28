@@ -9,6 +9,7 @@ import com.mongenscave.mcchatgame.database.impl.MySQL;
 import com.mongenscave.mcchatgame.hooks.plugins.PlaceholderAPI;
 import com.mongenscave.mcchatgame.listener.GameListener;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
+import com.mongenscave.mcchatgame.managers.ProxyManager;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.update.UpdateChecker;
 import com.mongenscave.mcchatgame.utils.LoggerUtils;
@@ -35,6 +36,7 @@ public final class McChatGame extends ZapperJavaPlugin {
     @Getter Executor mainThreadExecutor;
     @Getter AutoGameProcessor gameProcessor;
     @Getter UpdateChecker updateChecker;
+    @Getter ProxyManager proxyManager;
     Config config;
 
     @Override
@@ -48,6 +50,7 @@ public final class McChatGame extends ZapperJavaPlugin {
         saveDefaultConfig();
         initializeComponents();
         initializeDatabase();
+        initializeProxy();
         MainThreadExecutorService.initialize();
 
         getServer().getPluginManager().registerEvents(new GameListener(), this);
@@ -66,6 +69,7 @@ public final class McChatGame extends ZapperJavaPlugin {
 
     @Override
     public void onDisable() {
+        if (proxyManager != null) proxyManager.shutdown();
         if (database != null) database.shutdown();
         if (gameProcessor != null) gameProcessor.stop();
 
@@ -135,5 +139,10 @@ public final class McChatGame extends ZapperJavaPlugin {
             LoggerUtils.error("Failed to initialize database: " + exception.getMessage());
             getServer().getPluginManager().disablePlugin(this);
         }
+    }
+
+    private void initializeProxy() {
+        proxyManager = new ProxyManager(this);
+        proxyManager.initialize();
     }
 }
