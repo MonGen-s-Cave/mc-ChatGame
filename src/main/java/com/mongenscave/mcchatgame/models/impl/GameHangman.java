@@ -117,7 +117,15 @@ public class GameHangman extends GameHandler {
                 gameWon = true;
                 if (timeoutTask != null) timeoutTask.cancel();
 
-                GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage().replace("{word}", correctWord)));
+                // FIXED: Check if Redis is enabled - FIX #1 (in handleAnswer when game is lost)
+                if (McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    // Redis will broadcast to all servers
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctWord);
+                } else {
+                    // No Redis - broadcast locally only
+                    GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage().replace("{word}", correctWord)));
+                }
+
                 handleGameTimeout();
                 cleanup();
             } else announceGame();
@@ -221,8 +229,9 @@ public class GameHangman extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && !gameWon) {
-                GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage()
-                        .replace("{answer}", correctWord)));
+                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctWord);
+                else GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage().replace("{answer}", correctWord)));
+
                 handleGameTimeout();
                 cleanup();
             }

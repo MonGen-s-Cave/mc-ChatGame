@@ -94,7 +94,18 @@ public class ProxyManager {
     public void handleRemoteGameTimeout(@NotNull GameType gameType, @NotNull String correctAnswer) {
         plugin.getScheduler().runTask(() -> {
             String messageKey = getTimeoutMessageKey(gameType);
-            String message = MessageKeys.valueOf(messageKey).getMessage().replace("{answer}", correctAnswer);
+            String message = MessageKeys.valueOf(messageKey).getMessage();
+
+            // Apply answer placeholder for games that have it
+            if (gameType == GameType.RANGE) {
+                // For RANGE, we need to parse the answer and format it properly
+                message = message.replace("{answer}", correctAnswer)
+                        .replace("{min}", plugin.getConfiguration().getString("range.range", "0-20").split("-")[0])
+                        .replace("{max}", plugin.getConfiguration().getString("range.range", "0-20").split("-")[1]);
+            } else {
+                message = message.replace("{answer}", correctAnswer);
+            }
+
             GameUtils.broadcast(message);
 
             LoggerUtils.info("Remote game timeout: {} (answer: {})", gameType, correctAnswer);

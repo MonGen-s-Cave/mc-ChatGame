@@ -274,7 +274,9 @@ public class GameCrafting extends GameHandler implements Listener {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                GameUtils.broadcast(MessageKeys.CRAFTING_NO_WIN.getMessage());
+                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), "");
+                else GameUtils.broadcast(MessageKeys.CRAFTING_NO_WIN.getMessage());
+
                 handleGameTimeout();
                 cleanup();
             }

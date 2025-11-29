@@ -28,6 +28,7 @@ import revxrsal.zapper.ZapperJavaPlugin;
 import java.io.File;
 import java.util.concurrent.Executor;
 
+
 public final class McChatGame extends ZapperJavaPlugin {
     @Getter static McChatGame instance;
     @Getter TaskScheduler scheduler;

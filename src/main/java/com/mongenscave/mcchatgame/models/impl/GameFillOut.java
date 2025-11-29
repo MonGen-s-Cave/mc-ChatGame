@@ -84,7 +84,9 @@ public class GameFillOut extends GameHandler {
 
             PlayerUtils.sendToast(player, ConfigKeys.TOAST_MESSAGE, ConfigKeys.TOAST_MATERIAL, ConfigKeys.TOAST_ENABLED);
             GameUtils.playSoundToWinner(player, ConfigKeys.SOUND_WIN_ENABLED, ConfigKeys.SOUND_WIN_SOUND);
-        } winnerDetermined.set(false);
+        } else {
+            winnerDetermined.set(false);
+        }
     }
 
     @Override
@@ -130,7 +132,9 @@ public class GameFillOut extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
+                else GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+
                 handleGameTimeout();
                 cleanup();
             }

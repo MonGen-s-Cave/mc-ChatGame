@@ -136,7 +136,9 @@ public class GameWordGuess extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                GameUtils.broadcast(MessageKeys.WORD_GUESSER_NO_WIN.getMessage().replace("{answer}", originalWord));
+                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), originalWord);
+                else GameUtils.broadcast(MessageKeys.WORD_GUESSER_NO_WIN.getMessage().replace("{answer}", originalWord));
+
                 handleGameTimeout();
                 cleanup();
             }
