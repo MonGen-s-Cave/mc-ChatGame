@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
@@ -32,15 +33,26 @@ public class GameFillOut extends GameHandler {
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        List<String> words = ConfigKeys.FILL_OUT_WORDS.getList();
-        if (words.isEmpty()) return;
+        String word;
+
+        // Ellenőrizzük hogy remote game-e
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            // Remote game - használjuk az eredeti szót
+            word = gameData.toString();
+            LoggerUtils.info("Starting remote fill-out game with word: {}", word);
+            this.correctAnswer = word;
+        } else {
+            // Local game - generáljunk új szót
+            List<String> words = ConfigKeys.FILL_OUT_WORDS.getList();
+            if (words.isEmpty()) return;
+            word = words.get(random.nextInt(words.size())).trim();
+            this.correctAnswer = word;
+        }
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
-        String originalWord = words.get(random.nextInt(words.size())).trim();
-        String filled = generateFillOut(originalWord);
+        String filled = generateFillOut(correctAnswer);
 
-        this.correctAnswer = originalWord;
         this.gameData = filled;
         this.startTime = System.currentTimeMillis();
         this.winnerDetermined.set(false);
@@ -48,6 +60,12 @@ public class GameFillOut extends GameHandler {
 
         announceFillOut(filled);
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        // FillOut esetén az EREDETI szót küldjük, nem a filled-ot!
+        return correctAnswer;
     }
 
     @Override

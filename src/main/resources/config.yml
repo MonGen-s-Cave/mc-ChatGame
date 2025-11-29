@@ -13,6 +13,11 @@ redis:
   ssl: false
   timeout: 2000 # Connection timeout in milliseconds
 
+  # Server role: 'master' or 'slave'
+  # ONLY the master server will start games automatically
+  # Slave servers will only receive and display games from master
+  server-role: master
+
   # Unique identifier for this server (auto-generated if not set)
   # Use different IDs for each server in your network
   server-id: "lobby-1"

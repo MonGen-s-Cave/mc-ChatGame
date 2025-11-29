@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -30,10 +31,21 @@ public class GameWordStop extends GameHandler {
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        List<String> mobs = ConfigKeys.WORD_STOP_MOBS.getList();
-        if (mobs.isEmpty()) return;
+        String mobString;
 
-        String[] mobData = parseMob(mobs.get(random.nextInt(mobs.size())));
+        // Ellenőrizzük hogy remote game-e
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            // Remote game - használjuk a kapott gameData-t
+            mobString = gameData.toString();
+            LoggerUtils.info("Starting remote word-stop game with mob: {}", mobString);
+        } else {
+            // Local game - generáljunk új mob-ot
+            List<String> mobs = ConfigKeys.WORD_STOP_MOBS.getList();
+            if (mobs.isEmpty()) return;
+            mobString = mobs.get(random.nextInt(mobs.size()));
+        }
+
+        String[] mobData = parseMob(mobString);
         if (mobData == null) return;
 
         this.correctMob = mobData[1];

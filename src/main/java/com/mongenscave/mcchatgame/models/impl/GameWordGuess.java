@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -28,13 +29,33 @@ public class GameWordGuess extends GameHandler {
     private long startTime;
 
     @Override
+    protected String getOriginalGameData() {
+        return originalWord;
+    }
+
+    @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        List<String> words = ConfigKeys.WORD_GUESSER_WORDS.getList();
-        if (words.isEmpty()) return;
+        String word;
 
-        this.originalWord = words.get(random.nextInt(words.size())).trim();
+        // Ellenőrizzük hogy remote game-e
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            // Remote game - parse-oljuk vissza az eredeti szót a scrambled-ból
+            // FONTOS: A gameData itt a SCRAMBLED word, nem az eredeti!
+            // Ezért külön kell küldenünk az eredeti szót is, vagy másképp kell csinálni
+
+            // MEGOLDÁS: A gameData tartalmazza az eredeti szót
+            word = gameData.toString();
+            LoggerUtils.info("Starting remote word-guess game with word: {}", word);
+            this.originalWord = word;
+        } else {
+            // Local game - generáljunk új szót
+            List<String> words = ConfigKeys.WORD_GUESSER_WORDS.getList();
+            if (words.isEmpty()) return;
+            this.originalWord = words.get(random.nextInt(words.size())).trim();
+        }
+
         String scrambled = scrambleWord(originalWord);
         this.gameData = scrambled;
         this.startTime = System.currentTimeMillis();

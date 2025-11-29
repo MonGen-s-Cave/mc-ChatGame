@@ -14,6 +14,7 @@ public abstract class GameHandler {
     @Getter protected GameState state = GameState.INACTIVE;
     protected Object gameData;
     protected boolean gameStarted = false;
+    protected boolean isRemoteGame = false; // <--- ÚJ FLAG!
     @Getter protected long startTime;
 
     private static GameHandler currentActiveGame = null;
@@ -23,36 +24,57 @@ public abstract class GameHandler {
     public abstract void handleAnswer(@NotNull Player player, @NotNull String answer);
     protected abstract GameType getGameType();
 
+    // ÚJ METÓDUS: Remote game indításhoz
+    public void startAsRemote(long remoteStartTime, @NotNull String remoteGameData) {
+        this.isRemoteGame = true;
+        this.startTime = remoteStartTime;
+        this.gameData = remoteGameData;
+        start();
+    }
+
     protected void cleanup() {
         state = GameState.INACTIVE;
         gameData = null;
         gameStarted = false;
+        isRemoteGame = false; // <--- RESET
         startTime = 0;
 
         if (currentActiveGame == this) currentActiveGame = null;
 
         GameManager.removeInactiveGames();
 
-        if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameStop(getGameType());
+        if (McChatGame.getInstance().getProxyManager().isEnabled()) {
+            McChatGame.getInstance().getProxyManager().broadcastGameStop(getGameType());
+        }
     }
 
     protected void setAsActive() {
         currentActiveGame = this;
         state = GameState.ACTIVE;
-        startTime = System.currentTimeMillis();
+
+        if (!isRemoteGame) {
+            startTime = System.currentTimeMillis();
+        }
 
         if (!gameStarted) {
             StreakManager.getInstance().onGameStart();
             gameStarted = true;
 
-            if (McChatGame.getInstance().getProxyManager().isEnabled()) {
+            if (!isRemoteGame && McChatGame.getInstance().getProxyManager().isEnabled()) {
+                // FONTOS: WordGuess esetén az EREDETI szót küldjük, nem a scrambled-ot!
+                String dataToSend = getOriginalGameData();
+
                 McChatGame.getInstance().getProxyManager().broadcastGameStart(
                         getGameType(),
-                        getGameData() != null ? getGameData() : "",
+                        dataToSend != null ? dataToSend : (getGameData() != null ? getGameData() : ""),
                         startTime
                 );
             }
         }
+    }
+
+    protected String getOriginalGameData() {
+        return getGameData();
     }
 
     protected void handlePlayerWin(@NotNull Player winner) {

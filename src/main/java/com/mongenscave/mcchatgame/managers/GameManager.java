@@ -67,6 +67,10 @@ public class GameManager {
         ACTIVE_GAMES.entrySet().removeIf(entry -> entry.getValue().getState() == GameState.INACTIVE);
     }
 
+    public static void addGame(@NotNull GameType type, @NotNull GameHandler handler) {
+        ACTIVE_GAMES.put(type, handler);
+    }
+
     public static void stopAllGames() {
         ACTIVE_GAMES.values().forEach(GameHandler::stop);
         ACTIVE_GAMES.clear();

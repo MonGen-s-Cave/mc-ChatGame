@@ -5,6 +5,8 @@ import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
 import com.mongenscave.mcchatgame.managers.GameManager;
+import com.mongenscave.mcchatgame.managers.ProxyManager;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,6 +23,16 @@ public class AutoGameProcessor {
     private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
     public void start() {
+        // Ellenőrizzük hogy master szerver vagyunk-e <--- ÚJ
+        ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
+
+        if (proxyManager.isEnabled() && !proxyManager.isMasterServer()) {
+            LoggerUtils.info("AutoGameProcessor disabled - this is a SLAVE server");
+            LoggerUtils.info("Games will be received from the MASTER server via Redis");
+            return; // <--- NEM INDÍTUNK JÁTÉKOKAT!
+        }
+
+        LoggerUtils.info("AutoGameProcessor enabled - this is a MASTER server");
         stopExistingTask();
         scheduleNewTask();
     }
@@ -42,6 +54,13 @@ public class AutoGameProcessor {
     }
 
     private void checkAndStartGame() {
+        // Dupla ellenőrzés hogy master vagyunk-e <--- ÚJ BIZTONSÁGI ELLENŐRZÉS
+        ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
+        if (proxyManager.isEnabled() && !proxyManager.isMasterServer()) {
+            LoggerUtils.warn("AutoGameProcessor tried to start game on SLAVE server - blocking!");
+            return;
+        }
+
         int activeGames = GameManager.getActiveGameCount();
         long currentTime = System.currentTimeMillis();
         long lastGameEnd = GameManager.getLastGameEndTime();
@@ -57,7 +76,9 @@ public class AutoGameProcessor {
             return;
         }
 
-        if (activeGames == 0 && (lastGameEnd == 0 || currentTime - lastGameEnd >= cooldownPeriod)) startRandomGame();
+        if (activeGames == 0 && (lastGameEnd == 0 || currentTime - lastGameEnd >= cooldownPeriod)) {
+            startRandomGame();
+        }
 
         scheduleNewTask();
     }

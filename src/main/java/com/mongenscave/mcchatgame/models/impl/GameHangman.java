@@ -11,6 +11,7 @@ import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.processor.MessageProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import org.bukkit.entity.Player;
@@ -34,13 +35,30 @@ public class GameHangman extends GameHandler {
     private boolean gameWon = false;
 
     @Override
+    protected String getOriginalGameData() {
+        // Hangman esetén az eredeti szót küldjük
+        return correctWord;
+    }
+
+    @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        List<String> words = ConfigKeys.HANGMAN_WORDS.getList();
-        if (words.isEmpty()) return;
+        String word;
 
-        this.correctWord = words.get(random.nextInt(words.size())).toUpperCase();
+        // Ellenőrizzük hogy remote game-e
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            // Remote game - használjuk a kapott szót
+            word = gameData.toString().toUpperCase();
+            LoggerUtils.info("Starting remote hangman game with word: {}", word);
+        } else {
+            // Local game - generáljunk új szót
+            List<String> words = ConfigKeys.HANGMAN_WORDS.getList();
+            if (words.isEmpty()) return;
+            word = words.get(random.nextInt(words.size())).toUpperCase();
+        }
+
+        this.correctWord = word;
         this.guessedLetters = Collections.synchronizedSet(new HashSet<>());
         this.playersWhoGuessed = Collections.synchronizedSet(new HashSet<>());
         this.wrongGuesses = 0;

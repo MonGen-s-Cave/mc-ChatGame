@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,19 @@ public class GameRandomCharacters extends GameHandler {
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        this.targetSequence = generateSequence();
+        String sequence;
+
+        // Ellenőrizzük hogy remote game-e
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            // Remote game - használjuk a kapott sequence-t
+            sequence = gameData.toString();
+            LoggerUtils.info("Starting remote random-characters game with sequence: {}", sequence);
+            this.targetSequence = sequence;
+        } else {
+            // Local game - generáljunk új sequence-t
+            this.targetSequence = generateSequence();
+        }
+
         this.gameData = targetSequence;
         this.startTime = System.currentTimeMillis();
         this.winnerDetermined.set(false);

@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -30,10 +31,21 @@ public final class GameMath extends GameHandler {
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        List<String> problems = ConfigKeys.MATH_PROBLEMS.getList();
-        if (problems.isEmpty()) return;
+        String problemString;
 
-        String[] problemData = parseProblem(problems.get(random.nextInt(problems.size())));
+        // Ellenőrizzük hogy remote game-e
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            // Remote game - használjuk a kapott gameData-t
+            problemString = gameData.toString();
+            LoggerUtils.info("Starting remote math game with problem: {}", problemString);
+        } else {
+            // Local game - generáljunk új problémát
+            List<String> problems = ConfigKeys.MATH_PROBLEMS.getList();
+            if (problems.isEmpty()) return;
+            problemString = problems.get(random.nextInt(problems.size()));
+        }
+
+        String[] problemData = parseProblem(problemString);
         if (problemData == null) return;
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);

@@ -40,26 +40,48 @@ public class RedisSubscriber extends JedisPubSub {
         }
 
         subscriberThread = Thread.ofVirtual().start(() -> {
-            try (Jedis jedis = redisConfig.getJedisPool().getResource()) {
-                String[] channels = new String[RedisMessageType.values().length];
+            Jedis jedis = null;
+            try {
+                jedis = redisConfig.getJedisPool().getResource();
 
+                String[] channels = new String[RedisMessageType.values().length];
                 for (int i = 0; i < RedisMessageType.values().length; i++) {
                     channels[i] = channelPrefix + ":" + RedisMessageType.values()[i].getChannel();
                 }
 
+                LoggerUtils.info("Subscribing to {} Redis channels...", channels.length);
+
                 jedis.subscribe(this, channels);
             } catch (Exception exception) {
                 LoggerUtils.error("Redis subscriber error: " + exception.getMessage());
+                exception.printStackTrace();
+            } finally {
+                if (jedis != null) {
+                    try {
+                        jedis.close();
+                    } catch (Exception ignored) {}
+                }
             }
         });
     }
 
     public void shutdownSubscriber() {
-        if (isSubscribed()) super.unsubscribe();
-        if (subscriberThread != null && subscriberThread.isAlive()) subscriberThread.interrupt();
+        try {
+            if (isSubscribed()) {
+                LoggerUtils.info("Unsubscribing from Redis channels...");
+                super.unsubscribe();
+            }
 
-        executorService.shutdown();
-        LoggerUtils.info("Redis subscriber stopped");
+            if (subscriberThread != null && subscriberThread.isAlive()) {
+                subscriberThread.interrupt();
+                subscriberThread.join(5000);
+            }
+
+            executorService.shutdown();
+            LoggerUtils.info("Redis subscriber stopped");
+        } catch (Exception exception) {
+            LoggerUtils.error("Error shutting down subscriber: " + exception.getMessage());
+        }
     }
 
     @Override
@@ -72,13 +94,16 @@ public class RedisSubscriber extends JedisPubSub {
             JsonObject json = gson.fromJson(message, JsonObject.class);
 
             String messageServerId = json.get("serverId").getAsString();
-            if (messageServerId.equals(serverId)) return;
+            if (messageServerId.equals(serverId)) {
+                // Saját üzenetünk - ignoráljuk
+                return;
+            }
 
             String typeStr = json.get("type").getAsString();
             RedisMessageType type = RedisMessageType.valueOf(typeStr);
 
             switch (type) {
-                case GAME_START -> handleGameStart();
+                case GAME_START -> handleGameStart(json); // <--- MÓDOSÍTVA
                 case GAME_STOP -> handleGameStop(json);
                 case GAME_TIMEOUT -> handleGameTimeout(json);
                 case PLAYER_WIN -> handlePlayerWin(json);
@@ -88,11 +113,18 @@ public class RedisSubscriber extends JedisPubSub {
 
         } catch (Exception exception) {
             LoggerUtils.error("Error handling Redis message: " + exception.getMessage());
+            exception.printStackTrace();
         }
     }
 
-    private void handleGameStart() {
-        proxyManager.handleRemoteGameStart();
+    private void handleGameStart(@NotNull JsonObject json) { // <--- ÚJ PARAMÉTER
+        GameType gameType = GameType.valueOf(json.get("gameType").getAsString());
+        String gameData = json.get("gameData").getAsString();
+        long startTime = json.get("startTime").getAsLong();
+
+        LoggerUtils.info("Received remote game start: {} with data: {}", gameType, gameData);
+
+        proxyManager.handleRemoteGameStart(gameType, gameData, startTime);
     }
 
     private void handleGameStop(@NotNull JsonObject json) {

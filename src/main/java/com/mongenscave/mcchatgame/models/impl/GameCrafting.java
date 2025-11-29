@@ -64,27 +64,39 @@ public class GameCrafting extends GameHandler implements Listener {
         Section craftsSection = ConfigKeys.CRAFTING_CRAFTS.getSection();
         if (craftsSection == null || craftsSection.getRoutesAsStrings(false).isEmpty()) return;
 
-        ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> crafts = new ConcurrentHashMap<>();
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            this.targetItem = gameData.toString();
+            LoggerUtils.info("Starting remote crafting game with item: {}", targetItem);
 
-        for (String key : craftsSection.getRoutesAsStrings(false)) {
-            Section craftSection = craftsSection.getSection(key);
-
-            if (craftSection != null) {
-                ConcurrentHashMap<String, Object> craftData = new ConcurrentHashMap<>();
-                craftData.put("items-to-place", craftSection.getStringList("items-to-place"));
-                crafts.put(key, craftData);
+            Section craftSection = craftsSection.getSection(targetItem);
+            if (craftSection != null) this.requiredItems = new ArrayList<>(craftSection.getStringList("items-to-place"));
+            else {
+                LoggerUtils.error("Remote crafting item not found in config: {}", targetItem);
+                return;
             }
+        } else {
+            ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> crafts = new ConcurrentHashMap<>();
+
+            for (String key : craftsSection.getRoutesAsStrings(false)) {
+                Section craftSection = craftsSection.getSection(key);
+
+                if (craftSection != null) {
+                    ConcurrentHashMap<String, Object> craftData = new ConcurrentHashMap<>();
+                    craftData.put("items-to-place", craftSection.getStringList("items-to-place"));
+                    crafts.put(key, craftData);
+                }
+            }
+
+            List<String> craftKeys = new ArrayList<>(crafts.keySet());
+            this.targetItem = craftKeys.get(random.nextInt(craftKeys.size()));
+
+            ConcurrentHashMap<String, Object> craftData = crafts.get(targetItem);
+            @SuppressWarnings("unchecked") List<String> itemsToPlace = (List<String>) craftData.get("items-to-place");
+            this.requiredItems = new ArrayList<>(itemsToPlace);
         }
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
-        List<String> craftKeys = new ArrayList<>(crafts.keySet());
-        this.targetItem = craftKeys.get(random.nextInt(craftKeys.size()));
-
-        ConcurrentHashMap<String, Object> craftData = crafts.get(targetItem);
-        @SuppressWarnings("unchecked") List<String> itemsToPlace = (List<String>) craftData.get("items-to-place");
-
-        this.requiredItems = new ArrayList<>(itemsToPlace);
         this.gameData = targetItem;
         this.startTime = System.currentTimeMillis();
         this.winnerDetermined.set(false);

@@ -10,6 +10,7 @@ import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.processor.AutoGameProcessor;
 import com.mongenscave.mcchatgame.services.MainThreadExecutorService;
 import com.mongenscave.mcchatgame.utils.GameUtils;
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +31,7 @@ public class GameRange extends GameHandler {
     public void start() {
         if (state == GameState.ACTIVE) return;
 
+        // Parse range config
         String rangeConfig = ConfigKeys.RANGE_RANGE.getString();
         if (rangeConfig.trim().isEmpty()) return;
 
@@ -45,9 +47,23 @@ public class GameRange extends GameHandler {
 
         if (minRange >= maxRange) return;
 
+        // Ellenőrizzük hogy remote game-e
+        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
+            // Remote game - használjuk a kapott számot
+            try {
+                this.targetNumber = Integer.parseInt(gameData.toString());
+                LoggerUtils.info("Starting remote range game with number: {}", targetNumber);
+            } catch (NumberFormatException e) {
+                LoggerUtils.error("Invalid remote gameData for range: {}", gameData);
+                return;
+            }
+        } else {
+            // Local game - generáljunk új számot
+            this.targetNumber = random.nextInt(minRange, maxRange + 1);
+        }
+
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
-        this.targetNumber = random.nextInt(minRange, maxRange + 1);
         this.gameData = String.valueOf(targetNumber);
         this.startTime = System.currentTimeMillis();
         this.winnerDetermined.set(false);

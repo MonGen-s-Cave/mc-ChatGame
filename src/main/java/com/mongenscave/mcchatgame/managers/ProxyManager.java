@@ -4,6 +4,17 @@ import com.google.gson.JsonObject;
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
+import com.mongenscave.mcchatgame.models.GameHandler;
+import com.mongenscave.mcchatgame.models.impl.GameCrafting;
+import com.mongenscave.mcchatgame.models.impl.GameFillOut;
+import com.mongenscave.mcchatgame.models.impl.GameHangman;
+import com.mongenscave.mcchatgame.models.impl.GameMath;
+import com.mongenscave.mcchatgame.models.impl.GameRandomCharacters;
+import com.mongenscave.mcchatgame.models.impl.GameRange;
+import com.mongenscave.mcchatgame.models.impl.GameReverse;
+import com.mongenscave.mcchatgame.models.impl.GameWhoAmI;
+import com.mongenscave.mcchatgame.models.impl.GameWordGuess;
+import com.mongenscave.mcchatgame.models.impl.GameWordStop;
 import com.mongenscave.mcchatgame.proxy.RedisConfig;
 import com.mongenscave.mcchatgame.proxy.RedisPublisher;
 import com.mongenscave.mcchatgame.proxy.RedisSubscriber;
@@ -22,6 +33,7 @@ public class ProxyManager {
     @Getter private final RedisSubscriber subscriber;
     @Getter private final String serverId;
     @Getter private boolean enabled;
+    @Getter private boolean isMasterServer;
 
     public ProxyManager(@NotNull McChatGame plugin) {
         this.plugin = plugin;
@@ -30,23 +42,62 @@ public class ProxyManager {
         this.publisher = new RedisPublisher(redisConfig, serverId);
         this.subscriber = new RedisSubscriber(redisConfig, this, serverId);
         this.enabled = false;
+        this.isMasterServer = false;
     }
 
     public void initialize() {
         if (!plugin.getConfiguration().getBoolean("redis.enabled", false)) {
             LoggerUtils.info("Redis cross-server support is disabled");
+            enabled = false;
+            isMasterServer = true; // Ha Redis nincs, akkor ez a szerver master
             return;
         }
 
+        // Ellenőrizzük a server role-t <--- ÚJ
+        String serverRole = plugin.getConfiguration().getString("redis.server-role", "master").toLowerCase();
+        isMasterServer = serverRole.equals("master");
+
         if (!redisConfig.connect()) {
             LoggerUtils.error("Failed to connect to Redis - cross-server features disabled");
+            enabled = false;
+            isMasterServer = true; // Ha Redis fail, akkor ez a szerver master
             return;
         }
+
+        if (!redisConfig.isConnected()) {
+            LoggerUtils.error("Redis connection test failed");
+            enabled = false;
+            isMasterServer = true;
+            return;
+        }
+
+        LoggerUtils.info("Redis connection successful, starting subscriber...");
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ignored) {}
 
         subscriber.subscribe();
         enabled = true;
 
-        LoggerUtils.info("Redis cross-server support enabled (Server ID: {})", serverId);
+        LoggerUtils.info("Redis cross-server support enabled");
+        LoggerUtils.info("Server ID: {}", serverId);
+        LoggerUtils.info("Server Role: {}", isMasterServer ? "MASTER (starts games)" : "SLAVE (receives games)"); // <--- ÚJ LOG
+    }
+
+    public void testConnection() {
+        if (!enabled) {
+            LoggerUtils.warn("Cannot test connection - Redis is not enabled");
+            return;
+        }
+
+        try {
+            publisher.publishGameStart(GameType.MATH, "TEST", System.currentTimeMillis());
+            LoggerUtils.info("Test message published successfully");
+        } catch (Exception exception) {
+            LoggerUtils.error("Test message failed: " + exception.getMessage());
+            exception.printStackTrace();
+        }
     }
 
     public void shutdown() {
@@ -83,8 +134,26 @@ public class ProxyManager {
         publisher.publishPlayerWin(player.getName(), gameType, timeTaken);
     }
 
-    public void handleRemoteGameStart() {
-        plugin.getScheduler().runTask(GameManager::stopAllGames);
+    public void handleRemoteGameStart(@NotNull GameType gameType, @NotNull String gameData, long startTime) {
+        plugin.getScheduler().runTask(() -> {
+            LoggerUtils.info("Received remote game start: {} with data: '{}'", gameType, gameData);
+
+            GameManager.stopAllGames();
+
+            boolean wasEnabled = this.enabled;
+            this.enabled = false;
+
+            try {
+                GameHandler handler = createGameHandler(gameType);
+
+                handler.startAsRemote(startTime, gameData);
+                GameManager.addGame(gameType, handler);
+
+                LoggerUtils.info("Remote game started successfully");
+            } finally {
+                this.enabled = wasEnabled;
+            }
+        });
     }
 
     public void handleRemoteGameStop(@NotNull GameType gameType) {
@@ -110,6 +179,22 @@ public class ProxyManager {
 
             LoggerUtils.info("Remote game timeout: {} (answer: {})", gameType, correctAnswer);
         });
+    }
+
+    @NotNull
+    private GameHandler createGameHandler(@NotNull GameType gameType) {
+        return switch (gameType) {
+            case MATH -> new GameMath();
+            case WHO_AM_I -> new GameWhoAmI();
+            case WORD_GUESSER -> new GameWordGuess();
+            case RANDOM_CHARACTERS -> new GameRandomCharacters();
+            case WORD_STOP -> new GameWordStop();
+            case REVERSE -> new GameReverse();
+            case FILL_OUT -> new GameFillOut();
+            case CRAFTING -> new GameCrafting();
+            case HANGMAN -> new GameHangman();
+            case RANGE -> new GameRange();
+        };
     }
 
     public void handleRemotePlayerWin(@NotNull String playerName, @NotNull GameType gameType, double timeTaken) {
