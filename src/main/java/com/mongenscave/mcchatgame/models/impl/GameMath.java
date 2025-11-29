@@ -48,14 +48,24 @@ public final class GameMath extends GameHandler {
         String[] problemData = parseProblem(problemString);
         if (problemData == null) return;
 
-        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
+        // FIXED: Only play sound on master server (local games)
+        if (!isRemoteGame) {
+            GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
+        }
 
         this.correctAnswer = problemData[1];
         this.gameData = problemData[0];
-        this.startTime = System.currentTimeMillis();
+
+        // FIXED: For remote games, use the provided startTime from constructor
+        if (!isRemoteGame) {
+            this.startTime = System.currentTimeMillis();
+        }
+        // Note: startTime is already set in startAsRemote() for remote games
+
         this.winnerDetermined.set(false);
         this.setAsActive();
 
+        // CRITICAL FIX: Always announce, regardless of remote/local
         announceProblem();
         scheduleTimeout();
     }
@@ -84,10 +94,13 @@ public final class GameMath extends GameHandler {
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
+
+                        // LOCAL broadcast (always happens on the server where player answered)
                         GameUtils.broadcast(MessageKeys.MATH_GAME_WIN.getMessage()
                                 .replace("{player}", player.getName())
                                 .replace("{time}", formattedTime));
 
+                        // FIXED: handlePlayerWin now checks if master before broadcasting to Redis
                         handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
@@ -130,8 +143,11 @@ public final class GameMath extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
-                else GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                // REMOVED: Redis broadcast - now handled in handleGameTimeout()
+                // if (McChatGame.getInstance().getProxyManager().isEnabled()) ...
+
+                // LOCAL broadcast (csak ezen a szerveren)
+                GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage().replace("{answer}", correctAnswer));
 
                 handleGameTimeout();
                 cleanup();

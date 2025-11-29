@@ -4,6 +4,7 @@ import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameState;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.managers.GameManager;
+import com.mongenscave.mcchatgame.managers.ProxyManager;
 import com.mongenscave.mcchatgame.managers.StreakManager;
 import lombok.Getter;
 import org.bukkit.entity.Player;
@@ -25,10 +26,16 @@ public abstract class GameHandler {
     protected abstract GameType getGameType();
 
     // ÚJ METÓDUS: Remote game indításhoz
+    // ÚJ METÓDUS: Remote game indításhoz
     public void startAsRemote(long remoteStartTime, @NotNull String remoteGameData) {
         this.isRemoteGame = true;
         this.startTime = remoteStartTime;
         this.gameData = remoteGameData;
+
+        // CRITICAL FIX: Set state BEFORE calling start()
+        // This ensures the game is recognized as active when handleAnswer is called
+        this.state = GameState.INACTIVE; // Will be set to ACTIVE in start()
+
         start();
     }
 
@@ -80,17 +87,23 @@ public abstract class GameHandler {
     protected void handlePlayerWin(@NotNull Player winner) {
         StreakManager.getInstance().onPlayerWin(winner);
 
-        if (McChatGame.getInstance().getProxyManager().isEnabled()) {
+        // CRITICAL FIX: Only broadcast from MASTER server
+        ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
+        if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
             long endTime = System.currentTimeMillis();
             double timeTaken = (endTime - startTime) / 1000.0;
-            McChatGame.getInstance().getProxyManager().broadcastPlayerWin(winner, getGameType(), timeTaken);
+            proxyManager.broadcastPlayerWin(winner, getGameType(), timeTaken);
         }
     }
 
     protected void handleGameTimeout() {
         StreakManager.getInstance().onGameTimeout();
 
-        if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), "N/A");
+        // CRITICAL FIX: Only broadcast from MASTER server
+        ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
+        if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
+            proxyManager.broadcastGameTimeout(getGameType(), "N/A");
+        }
     }
 
     @Nullable

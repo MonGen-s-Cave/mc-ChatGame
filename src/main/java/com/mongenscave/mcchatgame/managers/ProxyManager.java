@@ -206,6 +206,8 @@ public class ProxyManager {
                     .replace("{time}", formattedTime);
 
             GameUtils.broadcast(message);
+
+            LoggerUtils.info("Remote player win: {} in {} ({}s)", playerName, gameType, formattedTime);
         });
     }
 

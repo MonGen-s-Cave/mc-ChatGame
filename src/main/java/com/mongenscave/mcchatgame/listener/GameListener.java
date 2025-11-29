@@ -4,6 +4,7 @@ import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.database.Database;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.managers.GameManager;
+import com.mongenscave.mcchatgame.managers.ProxyManager;
 import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.models.impl.GameHangman;
 import org.bukkit.event.Listener;
@@ -33,13 +34,16 @@ public class GameListener implements Listener {
             if (message.length() != 1 || !Character.isLetter(message.charAt(0))) return;
         }
 
-        if (McChatGame.getInstance().getProxyManager().isEnabled() && currentGame != null) {
+        // CRITICAL FIX: Only broadcast player answers from MASTER server
+        ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
+        if (proxyManager.isEnabled() && proxyManager.isMasterServer() && currentGame != null) {
             GameType gameType = getGameType(currentGame);
             if (gameType != null) {
-                McChatGame.getInstance().getProxyManager().broadcastPlayerAnswer(player, message, gameType);
+                proxyManager.broadcastPlayerAnswer(player, message, gameType);
             }
         }
 
+        // IMPORTANT: Always handle answer locally (both master and slave)
         String finalMessage = message;
         McChatGame.getInstance().getScheduler().runTask(() ->
                 GameManager.handleAnswer(player, finalMessage));

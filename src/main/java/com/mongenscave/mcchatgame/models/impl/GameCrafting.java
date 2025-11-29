@@ -95,15 +95,24 @@ public class GameCrafting extends GameHandler implements Listener {
             this.requiredItems = new ArrayList<>(itemsToPlace);
         }
 
-        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
+        // FIXED: Only play sound on master server
+        if (!isRemoteGame) {
+            GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
+        }
 
         this.gameData = targetItem;
-        this.startTime = System.currentTimeMillis();
+
+        // FIXED: startTime only for local games
+        if (!isRemoteGame) {
+            this.startTime = System.currentTimeMillis();
+        }
+
         this.winnerDetermined.set(false);
         this.setAsActive();
 
         Bukkit.getPluginManager().registerEvents(this, McChatGame.getInstance());
 
+        // CRITICAL FIX: Always announce
         announceCrafting();
         scheduleTimeout();
     }
