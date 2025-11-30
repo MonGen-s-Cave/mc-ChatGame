@@ -27,44 +27,36 @@ public class GameFillOut extends GameHandler {
     private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String correctAnswer;
-    private long startTime;
+    private String filledWord;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String word;
-
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk az eredeti szót
-            word = gameData.toString();
-            LoggerUtils.info("Starting remote fill-out game with word: {}", word);
-            this.correctAnswer = word;
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            this.correctAnswer = remoteGameData;
+            this.filledWord = generateFillOut(correctAnswer);
+            LoggerUtils.info("Starting REMOTE fill-out - Original: {}, Filled: {}", correctAnswer, filledWord);
         } else {
-            // Local game - generáljunk új szót
             List<String> words = ConfigKeys.FILL_OUT_WORDS.getList();
             if (words.isEmpty()) return;
-            word = words.get(random.nextInt(words.size())).trim();
-            this.correctAnswer = word;
+
+            this.correctAnswer = words.get(random.nextInt(words.size())).trim();
+            this.filledWord = generateFillOut(correctAnswer);
         }
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
-        String filled = generateFillOut(correctAnswer);
-
-        this.gameData = filled;
-        this.startTime = System.currentTimeMillis();
+        this.gameData = filledWord;
         this.winnerDetermined.set(false);
         this.setAsActive();
 
-        announceFillOut(filled);
+        announceFillOut();
         scheduleTimeout();
     }
 
     @Override
     protected String getOriginalGameData() {
-        // FillOut esetén az EREDETI szót küldjük, nem a filled-ot!
         return correctAnswer;
     }
 
@@ -79,7 +71,8 @@ public class GameFillOut extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(correctAnswer)) {
             long endTime = System.currentTimeMillis();
@@ -92,9 +85,12 @@ public class GameFillOut extends GameHandler {
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
-                        GameUtils.broadcast(MessageKeys.FILL_OUT_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
+
+                        if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                            GameUtils.broadcast(MessageKeys.FILL_OUT_WIN.getMessage()
+                                    .replace("{player}", player.getName())
+                                    .replace("{time}", formattedTime));
+                        }
 
                         handlePlayerWin(player);
                         cleanup();
@@ -115,6 +111,8 @@ public class GameFillOut extends GameHandler {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        correctAnswer = null;
+        filledWord = null;
         super.cleanup();
     }
 
@@ -143,15 +141,19 @@ public class GameFillOut extends GameHandler {
         return new String(chars);
     }
 
-    private void announceFillOut(@NotNull String filled) {
-        GameUtils.broadcastMessages(MessageKeys.FILL_OUT, "{word}", filled);
+    private void announceFillOut() {
+        GameUtils.broadcastMessages(MessageKeys.FILL_OUT, "{word}", filledWord);
     }
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
-                else GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageKeys.FILL_OUT_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                }
 
                 handleGameTimeout();
                 cleanup();

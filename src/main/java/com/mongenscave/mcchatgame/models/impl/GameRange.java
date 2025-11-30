@@ -25,13 +25,11 @@ public class GameRange extends GameHandler {
     private int targetNumber;
     private int minRange;
     private int maxRange;
-    private long startTime;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        // Parse range config
         String rangeConfig = ConfigKeys.RANGE_RANGE.getString();
         if (rangeConfig.trim().isEmpty()) return;
 
@@ -47,30 +45,31 @@ public class GameRange extends GameHandler {
 
         if (minRange >= maxRange) return;
 
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk a kapott számot
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
             try {
-                this.targetNumber = Integer.parseInt(gameData.toString());
-                LoggerUtils.info("Starting remote range game with number: {}", targetNumber);
+                this.targetNumber = Integer.parseInt(remoteGameData);
+                LoggerUtils.info("Starting REMOTE range game with number: {}", targetNumber);
             } catch (NumberFormatException e) {
-                LoggerUtils.error("Invalid remote gameData for range: {}", gameData);
+                LoggerUtils.error("Invalid remote gameData for range: {}", remoteGameData);
                 return;
             }
         } else {
-            // Local game - generáljunk új számot
             this.targetNumber = random.nextInt(minRange, maxRange + 1);
         }
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
         this.gameData = String.valueOf(targetNumber);
-        this.startTime = System.currentTimeMillis();
         this.winnerDetermined.set(false);
         this.setAsActive();
 
         announceRange();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return String.valueOf(targetNumber);
     }
 
     @Override
@@ -89,7 +88,8 @@ public class GameRange extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         try {
             int guessedNumber = Integer.parseInt(answer.trim());
@@ -105,10 +105,13 @@ public class GameRange extends GameHandler {
                         .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                         .thenAcceptAsync(v -> {
                             GameUtils.rewardPlayer(player);
-                            GameUtils.broadcast(MessageKeys.RANGE_WIN.getMessage()
-                                    .replace("{player}", player.getName())
-                                    .replace("{number}", String.valueOf(targetNumber))
-                                    .replace("{time}", formattedTime));
+
+                            if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                                GameUtils.broadcast(MessageKeys.RANGE_WIN.getMessage()
+                                        .replace("{player}", player.getName())
+                                        .replace("{number}", String.valueOf(targetNumber))
+                                        .replace("{time}", formattedTime));
+                            }
 
                             handlePlayerWin(player);
                             cleanup();
@@ -116,7 +119,9 @@ public class GameRange extends GameHandler {
 
                 PlayerUtils.sendToast(player, ConfigKeys.TOAST_MESSAGE, ConfigKeys.TOAST_MATERIAL, ConfigKeys.TOAST_ENABLED);
                 GameUtils.playSoundToWinner(player, ConfigKeys.SOUND_WIN_ENABLED, ConfigKeys.SOUND_WIN_SOUND);
-            } else winnerDetermined.set(false);
+            } else {
+                winnerDetermined.set(false);
+            }
         } catch (NumberFormatException exception) {
             winnerDetermined.set(false);
         }
@@ -140,12 +145,13 @@ public class GameRange extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) {
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
                     McChatGame.getInstance().getProxyManager().broadcastGameTimeout(
                             getGameType(),
                             String.valueOf(targetNumber)
                     );
-                } else {
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
                     GameUtils.broadcast(MessageKeys.RANGE_NO_WIN.getMessage()
                             .replace("{answer}", String.valueOf(targetNumber))
                             .replace("{min}", String.valueOf(minRange))

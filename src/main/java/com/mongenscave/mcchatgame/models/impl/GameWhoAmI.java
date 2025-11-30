@@ -25,39 +25,48 @@ public class GameWhoAmI extends GameHandler {
     private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String correctAnswer;
-    private long startTime;
+    private String displayClue;
+    private String originalWordString;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String wordString;
-
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk a kapott gameData-t
-            wordString = gameData.toString();
-            LoggerUtils.info("Starting remote who-am-i game with word: {}", wordString);
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            String[] data = parseWord(remoteGameData);
+            if (data == null) {
+                LoggerUtils.error("Failed to parse remote who-am-i data: {}", remoteGameData);
+                return;
+            }
+            this.displayClue = data[0];
+            this.correctAnswer = data[1];
+            this.originalWordString = remoteGameData;
+            LoggerUtils.info("Starting REMOTE who-am-i - Clue: {}, Answer: {}", displayClue, correctAnswer);
         } else {
-            // Local game - generáljunk új szót
             List<String> words = ConfigKeys.WHO_AM_I_WORDS.getList();
             if (words.isEmpty()) return;
-            wordString = words.get(random.nextInt(words.size()));
-        }
 
-        String[] data = parseWord(wordString);
-        if (data == null) return;
+            this.originalWordString = words.get(random.nextInt(words.size()));
+            String[] data = parseWord(originalWordString);
+            if (data == null) return;
+
+            this.displayClue = data[0];
+            this.correctAnswer = data[1];
+        }
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
-        this.correctAnswer = data[1];
-        this.gameData = data[0];
-        this.startTime = System.currentTimeMillis();
+        this.gameData = displayClue;
         this.winnerDetermined.set(false);
         this.setAsActive();
 
         announceClue();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return originalWordString;
     }
 
     @Override
@@ -76,7 +85,8 @@ public class GameWhoAmI extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(correctAnswer)) {
             long endTime = System.currentTimeMillis();
@@ -89,9 +99,12 @@ public class GameWhoAmI extends GameHandler {
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
-                        GameUtils.broadcast(MessageKeys.WHO_AM_I_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
+
+                        if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                            GameUtils.broadcast(MessageKeys.WHO_AM_I_WIN.getMessage()
+                                    .replace("{player}", player.getName())
+                                    .replace("{time}", formattedTime));
+                        }
 
                         handlePlayerWin(player);
                         cleanup();
@@ -107,6 +120,9 @@ public class GameWhoAmI extends GameHandler {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        correctAnswer = null;
+        displayClue = null;
+        originalWordString = null;
         super.cleanup();
     }
 
@@ -123,15 +139,18 @@ public class GameWhoAmI extends GameHandler {
     }
 
     private void announceClue() {
-        String clue = (String) gameData;
-        GameUtils.broadcastMessages(MessageKeys.WHO_AM_I, "{question}", clue);
+        GameUtils.broadcastMessages(MessageKeys.WHO_AM_I, "{question}", displayClue);
     }
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
-                else GameUtils.broadcast(MessageKeys.WHO_AM_I_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageKeys.WHO_AM_I_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                }
 
                 handleGameTimeout();
                 cleanup();

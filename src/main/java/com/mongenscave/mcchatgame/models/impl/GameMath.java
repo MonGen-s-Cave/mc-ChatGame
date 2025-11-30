@@ -25,42 +25,47 @@ public final class GameMath extends GameHandler {
     private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String correctAnswer;
-    private long startTime;
+    private String displayEquation;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String problemString;
-
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            problemString = gameData.toString();
-            LoggerUtils.info("Starting remote math game with problem: {}", problemString);
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            String[] problemData = parseProblem(remoteGameData);
+            if (problemData == null) {
+                LoggerUtils.error("Failed to parse remote math problem: {}", remoteGameData);
+                return;
+            }
+            this.displayEquation = problemData[0];
+            this.correctAnswer = problemData[1];
+            LoggerUtils.info("Starting REMOTE math game - Equation: {}, Answer: {}", displayEquation, correctAnswer);
         } else {
             List<String> problems = ConfigKeys.MATH_PROBLEMS.getList();
             if (problems.isEmpty()) return;
-            problemString = problems.get(random.nextInt(problems.size()));
+
+            String problemString = problems.get(random.nextInt(problems.size()));
+            String[] problemData = parseProblem(problemString);
+            if (problemData == null) return;
+
+            this.displayEquation = problemData[0];
+            this.correctAnswer = problemData[1];
+
+            this.gameData = problemString;
         }
 
-        String[] problemData = parseProblem(problemString);
-        if (problemData == null) return;
-
-        // FIXED: Always play sound on all servers (both master and slave)
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
-
-        this.correctAnswer = problemData[1];
-        this.gameData = problemData[0];
-
-        if (!isRemoteGame) {
-            this.startTime = System.currentTimeMillis();
-        }
 
         this.winnerDetermined.set(false);
         this.setAsActive();
 
-        // CRITICAL FIX: Always announce the problem on all servers
         announceProblem();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return (String) gameData;
     }
 
     @Override
@@ -74,7 +79,8 @@ public final class GameMath extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(correctAnswer)) {
             long endTime = System.currentTimeMillis();
@@ -88,12 +94,7 @@ public final class GameMath extends GameHandler {
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
 
-                        // FIXED: Only master broadcasts win (ProxyManager will handle it)
-                        if (McChatGame.getInstance().getProxyManager().isEnabled() &&
-                                McChatGame.getInstance().getProxyManager().isMasterServer()) {
-                            // Win broadcast is handled by ProxyManager via handlePlayerWin()
-                        } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
-                            // No Redis - broadcast locally
+                        if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
                             GameUtils.broadcast(MessageKeys.MATH_GAME_WIN.getMessage()
                                     .replace("{player}", player.getName())
                                     .replace("{time}", formattedTime));
@@ -118,6 +119,8 @@ public final class GameMath extends GameHandler {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        correctAnswer = null;
+        displayEquation = null;
         super.cleanup();
     }
 
@@ -134,24 +137,19 @@ public final class GameMath extends GameHandler {
     }
 
     private void announceProblem() {
-        String question = (String) gameData;
-        GameUtils.broadcastMessages(MessageKeys.MATH_GAME, "{equation}", question);
+        GameUtils.broadcastMessages(MessageKeys.MATH_GAME, "{equation}", displayEquation);
     }
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                // FIXED: Proper timeout handling for both master and slave
                 if (McChatGame.getInstance().getProxyManager().isEnabled() &&
                         McChatGame.getInstance().getProxyManager().isMasterServer()) {
-                    // Master broadcasts timeout
                     McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
                 } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
-                    // No Redis - local broadcast
                     GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage()
                             .replace("{answer}", correctAnswer));
                 }
-                // Slave servers will receive timeout via Redis subscriber
 
                 handleGameTimeout();
                 cleanup();

@@ -31,38 +31,24 @@ public class GameHangman extends GameHandler {
     private Set<Character> guessedLetters;
     private Set<Player> playersWhoGuessed;
     private int wrongGuesses;
-    private long startTime;
     private boolean gameWon = false;
-
-    @Override
-    protected String getOriginalGameData() {
-        // Hangman esetén az eredeti szót küldjük
-        return correctWord;
-    }
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String word;
-
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk a kapott szót
-            word = gameData.toString().toUpperCase();
-            LoggerUtils.info("Starting remote hangman game with word: {}", word);
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            this.correctWord = remoteGameData.toUpperCase();
+            LoggerUtils.info("Starting REMOTE hangman game with word: {}", correctWord);
         } else {
-            // Local game - generáljunk új szót
             List<String> words = ConfigKeys.HANGMAN_WORDS.getList();
             if (words.isEmpty()) return;
-            word = words.get(random.nextInt(words.size())).toUpperCase();
+            this.correctWord = words.get(random.nextInt(words.size())).toUpperCase();
         }
 
-        this.correctWord = word;
         this.guessedLetters = Collections.synchronizedSet(new HashSet<>());
         this.playersWhoGuessed = Collections.synchronizedSet(new HashSet<>());
         this.wrongGuesses = 0;
-        this.startTime = System.currentTimeMillis();
         this.gameWon = false;
         this.gameData = buildDisplayWord();
         this.setAsActive();
@@ -71,6 +57,11 @@ public class GameHangman extends GameHandler {
 
         announceGame();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return correctWord;
     }
 
     @Override
@@ -117,9 +108,12 @@ public class GameHangman extends GameHandler {
                         .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                         .thenAcceptAsync(v -> {
                             GameUtils.rewardPlayer(player);
-                            GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_WIN.getMessage()
-                                    .replace("{player}", player.getName())
-                                    .replace("{time}", formattedTime)));
+
+                            if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                                GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_WIN.getMessage()
+                                        .replace("{player}", player.getName())
+                                        .replace("{time}", formattedTime)));
+                            }
 
                             handlePlayerWin(player);
                             cleanup();
@@ -135,18 +129,18 @@ public class GameHangman extends GameHandler {
                 gameWon = true;
                 if (timeoutTask != null) timeoutTask.cancel();
 
-                // FIXED: Check if Redis is enabled - FIX #1 (in handleAnswer when game is lost)
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) {
-                    // Redis will broadcast to all servers
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
                     McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctWord);
-                } else {
-                    // No Redis - broadcast locally only
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
                     GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage().replace("{word}", correctWord)));
                 }
 
                 handleGameTimeout();
                 cleanup();
-            } else announceGame();
+            } else {
+                announceGame();
+            }
         }
     }
 
@@ -185,8 +179,11 @@ public class GameHangman extends GameHandler {
         String foundFormat = MessageProcessor.process(ConfigKeys.HANGMAN_FOUND.getString());
 
         for (char letter : correctWord.toCharArray()) {
-            if (guessedLetters.contains(letter)) displayWord.append(foundFormat.replace("{letter}", String.valueOf(letter)));
-            else displayWord.append(placeholders);
+            if (guessedLetters.contains(letter)) {
+                displayWord.append(foundFormat.replace("{letter}", String.valueOf(letter)));
+            } else {
+                displayWord.append(placeholders);
+            }
         }
 
         return displayWord.toString();
@@ -220,8 +217,11 @@ public class GameHangman extends GameHandler {
 
             if (stageLine == null) continue;
 
-            if (stageNumber <= wrongGuesses) stages.append(stageInColor).append(stageLine);
-            else stages.append(stageOutColor).append(stageLine);
+            if (stageNumber <= wrongGuesses) {
+                stages.append(stageInColor).append(stageLine);
+            } else {
+                stages.append(stageOutColor).append(stageLine);
+            }
 
             if (i < sortedStageNumbers.size() - 1) stages.append("\n");
         }
@@ -247,8 +247,12 @@ public class GameHangman extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && !gameWon) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctWord);
-                else GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage().replace("{answer}", correctWord)));
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctWord);
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageProcessor.process(MessageKeys.HANGMAN_NO_WIN.getMessage().replace("{answer}", correctWord)));
+                }
 
                 handleGameTimeout();
                 cleanup();

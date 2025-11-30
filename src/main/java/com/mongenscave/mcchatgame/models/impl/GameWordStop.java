@@ -25,39 +25,48 @@ public class GameWordStop extends GameHandler {
     private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String correctMob;
-    private long startTime;
+    private String displayLetter;
+    private String originalMobString;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String mobString;
-
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk a kapott gameData-t
-            mobString = gameData.toString();
-            LoggerUtils.info("Starting remote word-stop game with mob: {}", mobString);
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            String[] mobData = parseMob(remoteGameData);
+            if (mobData == null) {
+                LoggerUtils.error("Failed to parse remote word-stop data: {}", remoteGameData);
+                return;
+            }
+            this.displayLetter = mobData[0];
+            this.correctMob = mobData[1];
+            this.originalMobString = remoteGameData;
+            LoggerUtils.info("Starting REMOTE word-stop - Letter: {}, Mob: {}", displayLetter, correctMob);
         } else {
-            // Local game - generáljunk új mob-ot
             List<String> mobs = ConfigKeys.WORD_STOP_MOBS.getList();
             if (mobs.isEmpty()) return;
-            mobString = mobs.get(random.nextInt(mobs.size()));
+
+            this.originalMobString = mobs.get(random.nextInt(mobs.size()));
+            String[] mobData = parseMob(originalMobString);
+            if (mobData == null) return;
+
+            this.displayLetter = mobData[0];
+            this.correctMob = mobData[1];
         }
-
-        String[] mobData = parseMob(mobString);
-        if (mobData == null) return;
-
-        this.correctMob = mobData[1];
-        this.gameData = mobData[0];
-        this.startTime = System.currentTimeMillis();
-        this.winnerDetermined.set(false);
-        this.setAsActive();
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
+        this.gameData = displayLetter;
+        this.winnerDetermined.set(false);
+        this.setAsActive();
+
         announceClue();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return originalMobString;
     }
 
     @Override
@@ -76,7 +85,8 @@ public class GameWordStop extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(correctMob)) {
             long endTime = System.currentTimeMillis();
@@ -89,9 +99,12 @@ public class GameWordStop extends GameHandler {
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
-                        GameUtils.broadcast(MessageKeys.WORD_STOP_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
+
+                        if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                            GameUtils.broadcast(MessageKeys.WORD_STOP_WIN.getMessage()
+                                    .replace("{player}", player.getName())
+                                    .replace("{time}", formattedTime));
+                        }
 
                         handlePlayerWin(player);
                         cleanup();
@@ -107,6 +120,9 @@ public class GameWordStop extends GameHandler {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        correctMob = null;
+        displayLetter = null;
+        originalMobString = null;
         super.cleanup();
     }
 
@@ -123,15 +139,18 @@ public class GameWordStop extends GameHandler {
     }
 
     private void announceClue() {
-        String letter = (String) gameData;
-        GameUtils.broadcastMessages(MessageKeys.WORD_STOP, "{character}", letter);
+        GameUtils.broadcastMessages(MessageKeys.WORD_STOP, "{character}", displayLetter);
     }
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctMob);
-                else GameUtils.broadcast(MessageKeys.WORD_STOP_NO_WIN.getMessage().replace("{answer}", correctMob));
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctMob);
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageKeys.WORD_STOP_NO_WIN.getMessage().replace("{answer}", correctMob));
+                }
 
                 handleGameTimeout();
                 cleanup();

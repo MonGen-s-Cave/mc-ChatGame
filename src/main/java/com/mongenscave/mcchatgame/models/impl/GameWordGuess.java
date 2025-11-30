@@ -26,46 +26,37 @@ public class GameWordGuess extends GameHandler {
     private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String originalWord;
-    private long startTime;
-
-    @Override
-    protected String getOriginalGameData() {
-        return originalWord;
-    }
+    private String scrambledWord;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String word;
-
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - parse-oljuk vissza az eredeti szót a scrambled-ból
-            // FONTOS: A gameData itt a SCRAMBLED word, nem az eredeti!
-            // Ezért külön kell küldenünk az eredeti szót is, vagy másképp kell csinálni
-
-            // MEGOLDÁS: A gameData tartalmazza az eredeti szót
-            word = gameData.toString();
-            LoggerUtils.info("Starting remote word-guess game with word: {}", word);
-            this.originalWord = word;
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            this.originalWord = remoteGameData;
+            this.scrambledWord = scrambleWord(originalWord);
+            LoggerUtils.info("Starting REMOTE word-guess - Original: {}, Scrambled: {}", originalWord, scrambledWord);
         } else {
-            // Local game - generáljunk új szót
             List<String> words = ConfigKeys.WORD_GUESSER_WORDS.getList();
             if (words.isEmpty()) return;
-            this.originalWord = words.get(random.nextInt(words.size())).trim();
-        }
 
-        String scrambled = scrambleWord(originalWord);
-        this.gameData = scrambled;
-        this.startTime = System.currentTimeMillis();
-        this.winnerDetermined.set(false);
-        this.setAsActive();
+            this.originalWord = words.get(random.nextInt(words.size())).trim();
+            this.scrambledWord = scrambleWord(originalWord);
+        }
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
-        announceScrambled(scrambled);
+        this.gameData = scrambledWord;
+        this.winnerDetermined.set(false);
+        this.setAsActive();
+
+        announceScrambled();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return originalWord;
     }
 
     @Override
@@ -84,7 +75,8 @@ public class GameWordGuess extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(originalWord)) {
             long endTime = System.currentTimeMillis();
@@ -97,9 +89,12 @@ public class GameWordGuess extends GameHandler {
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
-                        GameUtils.broadcast(MessageKeys.WORD_GUESSER_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
+
+                        if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                            GameUtils.broadcast(MessageKeys.WORD_GUESSER_WIN.getMessage()
+                                    .replace("{player}", player.getName())
+                                    .replace("{time}", formattedTime));
+                        }
 
                         handlePlayerWin(player);
                         cleanup();
@@ -115,6 +110,8 @@ public class GameWordGuess extends GameHandler {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        originalWord = null;
+        scrambledWord = null;
         super.cleanup();
     }
 
@@ -150,15 +147,19 @@ public class GameWordGuess extends GameHandler {
         return sb.toString();
     }
 
-    private void announceScrambled(@NotNull String scrambled) {
-        GameUtils.broadcastMessages(MessageKeys.WORD_GUESSER, "{word}", scrambled);
+    private void announceScrambled() {
+        GameUtils.broadcastMessages(MessageKeys.WORD_GUESSER, "{word}", scrambledWord);
     }
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), originalWord);
-                else GameUtils.broadcast(MessageKeys.WORD_GUESSER_NO_WIN.getMessage().replace("{answer}", originalWord));
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), originalWord);
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageKeys.WORD_GUESSER_NO_WIN.getMessage().replace("{answer}", originalWord));
+                }
 
                 handleGameTimeout();
                 cleanup();

@@ -24,34 +24,31 @@ public class GameRandomCharacters extends GameHandler {
     private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^*()";
     private MyScheduledTask timeoutTask;
     private String targetSequence;
-    private long startTime;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String sequence;
-
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk a kapott sequence-t
-            sequence = gameData.toString();
-            LoggerUtils.info("Starting remote random-characters game with sequence: {}", sequence);
-            this.targetSequence = sequence;
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            this.targetSequence = remoteGameData;
+            LoggerUtils.info("Starting REMOTE random-characters with sequence: {}", targetSequence);
         } else {
-            // Local game - generáljunk új sequence-t
             this.targetSequence = generateSequence();
         }
 
+        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
+
         this.gameData = targetSequence;
-        this.startTime = System.currentTimeMillis();
         this.winnerDetermined.set(false);
         this.setAsActive();
 
-        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
-
         announceGame();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return targetSequence;
     }
 
     @Override
@@ -70,7 +67,8 @@ public class GameRandomCharacters extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.equals(targetSequence)) {
             long endTime = System.currentTimeMillis();
@@ -83,9 +81,12 @@ public class GameRandomCharacters extends GameHandler {
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
-                        GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
+
+                        if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                            GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_WIN.getMessage()
+                                    .replace("{player}", player.getName())
+                                    .replace("{time}", formattedTime));
+                        }
 
                         handlePlayerWin(player);
                         cleanup();
@@ -101,6 +102,7 @@ public class GameRandomCharacters extends GameHandler {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        targetSequence = null;
         super.cleanup();
     }
 
@@ -128,8 +130,12 @@ public class GameRandomCharacters extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), "");
-                else GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_NO_WIN.getMessage());
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), "");
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageKeys.RANDOM_CHARACTERS_NO_WIN.getMessage());
+                }
 
                 handleGameTimeout();
                 cleanup();

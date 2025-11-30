@@ -53,7 +53,6 @@ public class GameCrafting extends GameHandler implements Listener {
     private MyScheduledTask timeoutTask;
     private String targetItem;
     private List<String> requiredItems;
-    private long startTime;
     private final Set<UUID> participatingPlayers = Collections.synchronizedSet(new HashSet<>());
     private final ConcurrentHashMap<UUID, Inventory> playerInventories = new ConcurrentHashMap<>();
 
@@ -64,13 +63,14 @@ public class GameCrafting extends GameHandler implements Listener {
         Section craftsSection = ConfigKeys.CRAFTING_CRAFTS.getSection();
         if (craftsSection == null || craftsSection.getRoutesAsStrings(false).isEmpty()) return;
 
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            this.targetItem = gameData.toString();
-            LoggerUtils.info("Starting remote crafting game with item: {}", targetItem);
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            this.targetItem = remoteGameData;
+            LoggerUtils.info("Starting REMOTE crafting game with item: {}", targetItem);
 
             Section craftSection = craftsSection.getSection(targetItem);
-            if (craftSection != null) this.requiredItems = new ArrayList<>(craftSection.getStringList("items-to-place"));
-            else {
+            if (craftSection != null) {
+                this.requiredItems = new ArrayList<>(craftSection.getStringList("items-to-place"));
+            } else {
                 LoggerUtils.error("Remote crafting item not found in config: {}", targetItem);
                 return;
             }
@@ -91,30 +91,26 @@ public class GameCrafting extends GameHandler implements Listener {
             this.targetItem = craftKeys.get(random.nextInt(craftKeys.size()));
 
             ConcurrentHashMap<String, Object> craftData = crafts.get(targetItem);
-            @SuppressWarnings("unchecked") List<String> itemsToPlace = (List<String>) craftData.get("items-to-place");
+            @SuppressWarnings("unchecked")
+            List<String> itemsToPlace = (List<String>) craftData.get("items-to-place");
             this.requiredItems = new ArrayList<>(itemsToPlace);
         }
 
-        // FIXED: Only play sound on master server
-        if (!isRemoteGame) {
-            GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
-        }
+        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
         this.gameData = targetItem;
-
-        // FIXED: startTime only for local games
-        if (!isRemoteGame) {
-            this.startTime = System.currentTimeMillis();
-        }
-
         this.winnerDetermined.set(false);
         this.setAsActive();
 
         Bukkit.getPluginManager().registerEvents(this, McChatGame.getInstance());
 
-        // CRITICAL FIX: Always announce
         announceCrafting();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return targetItem;
     }
 
     @Override
@@ -123,7 +119,6 @@ public class GameCrafting extends GameHandler implements Listener {
 
         for (UUID playerId : participatingPlayers) {
             Player player = Bukkit.getPlayer(playerId);
-
             if (player != null && player.isOnline()) player.closeInventory();
         }
 
@@ -135,7 +130,8 @@ public class GameCrafting extends GameHandler implements Listener {
     }
 
     @Override
-    public void handleAnswer(@NotNull Player player, @NotNull String answer) {}
+    public void handleAnswer(@NotNull Player player, @NotNull String answer) {
+    }
 
     @Override
     public long getStartTime() {
@@ -145,6 +141,10 @@ public class GameCrafting extends GameHandler implements Listener {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        participatingPlayers.clear();
+        playerInventories.clear();
+        targetItem = null;
+        requiredItems = null;
         super.cleanup();
     }
 
@@ -208,7 +208,9 @@ public class GameCrafting extends GameHandler implements Listener {
             ItemStack resultItem = event.getCurrentItem();
 
             if (resultItem != null && resultItem.getType().toString().equals(targetItem)) {
-                if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) handleWin(player);
+                if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
+                    handleWin(player);
+                }
             }
 
             event.setCancelled(true);
@@ -222,9 +224,13 @@ public class GameCrafting extends GameHandler implements Listener {
             }
 
             McChatGame.getInstance().getScheduler().runTaskLater(() -> {
-                if (state == GameState.ACTIVE && !winnerDetermined.get()) updateCraftingResult(topInv);
+                if (state == GameState.ACTIVE && !winnerDetermined.get()) {
+                    updateCraftingResult(topInv);
+                }
             }, 1L);
-        } else event.setCancelled(true);
+        } else {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
@@ -238,7 +244,8 @@ public class GameCrafting extends GameHandler implements Listener {
 
         Set<Integer> dragSlots = event.getRawSlots();
 
-        boolean affectsInvalidSlots = dragSlots.stream().anyMatch(slot -> slot < 1 || slot > 9 || slot >= topInv.getSize()
+        boolean affectsInvalidSlots = dragSlots.stream().anyMatch(slot ->
+                slot < 1 || slot > 9 || slot >= topInv.getSize()
         );
 
         if (affectsInvalidSlots) {
@@ -247,7 +254,9 @@ public class GameCrafting extends GameHandler implements Listener {
         }
 
         McChatGame.getInstance().getScheduler().runTaskLater(() -> {
-            if (state == GameState.ACTIVE && !winnerDetermined.get()) updateCraftingResult(topInv);
+            if (state == GameState.ACTIVE && !winnerDetermined.get()) {
+                updateCraftingResult(topInv);
+            }
         }, 1L);
     }
 
@@ -280,9 +289,12 @@ public class GameCrafting extends GameHandler implements Listener {
                 .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                 .thenAcceptAsync(v -> {
                     GameUtils.rewardPlayer(player);
-                    GameUtils.broadcast(MessageKeys.CRAFTING_WIN.getMessage()
-                            .replace("{time}", formattedTime)
-                            .replace("{player}", player.getName()));
+
+                    if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                        GameUtils.broadcast(MessageKeys.CRAFTING_WIN.getMessage()
+                                .replace("{time}", formattedTime)
+                                .replace("{player}", player.getName()));
+                    }
 
                     handlePlayerWin(player);
                     cleanup();
@@ -295,8 +307,12 @@ public class GameCrafting extends GameHandler implements Listener {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), "");
-                else GameUtils.broadcast(MessageKeys.CRAFTING_NO_WIN.getMessage());
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), "");
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageKeys.CRAFTING_NO_WIN.getMessage());
+                }
 
                 handleGameTimeout();
                 cleanup();
@@ -348,7 +364,8 @@ public class GameCrafting extends GameHandler implements Listener {
         return false;
     }
 
-    private boolean matchesAtPosition(ItemStack[] matrix, @NotNull String[] shape, Map<Character, ItemStack> ingredients, int offsetRow, int offsetCol) {
+    private boolean matchesAtPosition(ItemStack[] matrix, @NotNull String[] shape,
+                                      Map<Character, ItemStack> ingredients, int offsetRow, int offsetCol) {
         for (int row = 0; row < shape.length; row++) {
             for (int col = 0; col < shape[row].length(); col++) {
                 char c = shape[row].charAt(col);
@@ -357,8 +374,11 @@ public class GameCrafting extends GameHandler implements Listener {
                 ItemStack required = ingredients.get(c);
                 ItemStack actual = matrix[matrixIndex];
 
-                if (c == ' ') if (actual != null && actual.getType() != Material.AIR) return false;
-                else if (!itemsMatch(actual, required)) return false;
+                if (c == ' ') {
+                    if (actual != null && actual.getType() != Material.AIR) return false;
+                } else if (!itemsMatch(actual, required)) {
+                    return false;
+                }
             }
         }
 

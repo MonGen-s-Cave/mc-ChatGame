@@ -24,42 +24,37 @@ public class GameReverse extends GameHandler {
     private final AtomicBoolean winnerDetermined = new AtomicBoolean(false);
     private MyScheduledTask timeoutTask;
     private String originalWord;
-    private long startTime;
-
-    @Override
-    protected String getOriginalGameData() {
-        return originalWord;
-    }
+    private String reversedWord;
 
     @Override
     public void start() {
         if (state == GameState.ACTIVE) return;
 
-        String word;
-
-        // Ellenőrizzük hogy remote game-e
-        if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk az eredeti szót
-            word = gameData.toString();
-            LoggerUtils.info("Starting remote reverse game with word: {}", word);
-            this.originalWord = word;
+        if (isRemoteGame && remoteGameData != null && !remoteGameData.isEmpty()) {
+            this.originalWord = remoteGameData;
+            this.reversedWord = new StringBuilder(originalWord).reverse().toString();
+            LoggerUtils.info("Starting REMOTE reverse - Original: {}, Reversed: {}", originalWord, reversedWord);
         } else {
-            // Local game - generáljunk új szót
             List<String> words = ConfigKeys.REVERSE_WORDS.getList();
             if (words.isEmpty()) return;
+
             this.originalWord = words.get(random.nextInt(words.size())).trim();
+            this.reversedWord = new StringBuilder(originalWord).reverse().toString();
         }
 
         GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
-        String reversed = new StringBuilder(originalWord).reverse().toString();
-        this.gameData = reversed;
-        this.startTime = System.currentTimeMillis();
+        this.gameData = reversedWord;
         this.winnerDetermined.set(false);
         this.setAsActive();
 
-        announceReversed(reversed);
+        announceReversed();
         scheduleTimeout();
+    }
+
+    @Override
+    protected String getOriginalGameData() {
+        return originalWord;
     }
 
     @Override
@@ -78,7 +73,8 @@ public class GameReverse extends GameHandler {
 
     @Override
     public void handleAnswer(@NotNull Player player, @NotNull String answer) {
-        if (state != GameState.ACTIVE || !winnerDetermined.compareAndSet(false, true)) return;
+        if (state != GameState.ACTIVE) return;
+        if (!winnerDetermined.compareAndSet(false, true)) return;
 
         if (answer.trim().equalsIgnoreCase(originalWord)) {
             long endTime = System.currentTimeMillis();
@@ -91,9 +87,12 @@ public class GameReverse extends GameHandler {
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
-                        GameUtils.broadcast(MessageKeys.REVERSE_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
+
+                        if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                            GameUtils.broadcast(MessageKeys.REVERSE_WIN.getMessage()
+                                    .replace("{player}", player.getName())
+                                    .replace("{time}", formattedTime));
+                        }
 
                         handlePlayerWin(player);
                         cleanup();
@@ -109,6 +108,8 @@ public class GameReverse extends GameHandler {
     @Override
     protected void cleanup() {
         winnerDetermined.set(false);
+        originalWord = null;
+        reversedWord = null;
         super.cleanup();
     }
 
@@ -117,15 +118,19 @@ public class GameReverse extends GameHandler {
         return GameType.REVERSE;
     }
 
-    private void announceReversed(@NotNull String reversed) {
-        GameUtils.broadcastMessages(MessageKeys.REVERSE, "{word}", reversed);
+    private void announceReversed() {
+        GameUtils.broadcastMessages(MessageKeys.REVERSE, "{word}", reversedWord);
     }
 
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                if (McChatGame.getInstance().getProxyManager().isEnabled()) McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), originalWord);
-                else GameUtils.broadcast(MessageKeys.REVERSE_NO_WIN.getMessage().replace("{answer}", originalWord));
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), originalWord);
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    GameUtils.broadcast(MessageKeys.REVERSE_NO_WIN.getMessage().replace("{answer}", originalWord));
+                }
 
                 handleGameTimeout();
                 cleanup();

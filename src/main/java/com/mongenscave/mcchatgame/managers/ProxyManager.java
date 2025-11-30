@@ -3,6 +3,7 @@ package com.mongenscave.mcchatgame.managers;
 import com.google.gson.JsonObject;
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameType;
+import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
 import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
 import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.models.impl.*;
@@ -28,7 +29,8 @@ public class ProxyManager {
 
     public ProxyManager(@NotNull McChatGame plugin) {
         this.plugin = plugin;
-        this.serverId = plugin.getConfiguration().getString("redis.server-id", plugin.getServer().getPort() + "-" + System.currentTimeMillis());
+        this.serverId = plugin.getConfiguration().getString("redis.server-id",
+                plugin.getServer().getPort() + "-" + System.currentTimeMillis());
         this.redisConfig = new RedisConfig(plugin);
         this.publisher = new RedisPublisher(redisConfig, serverId);
         this.subscriber = new RedisSubscriber(redisConfig, this, serverId);
@@ -75,21 +77,6 @@ public class ProxyManager {
         LoggerUtils.info("Server Role: {}", isMasterServer ? "MASTER (starts games)" : "SLAVE (receives games)");
     }
 
-    public void testConnection() {
-        if (!enabled) {
-            LoggerUtils.warn("Cannot test connection - Redis is not enabled");
-            return;
-        }
-
-        try {
-            publisher.publishGameStart(GameType.MATH, "TEST", System.currentTimeMillis());
-            LoggerUtils.info("Test message published successfully");
-        } catch (Exception exception) {
-            LoggerUtils.error("Test message failed: " + exception.getMessage());
-            exception.printStackTrace();
-        }
-    }
-
     public void shutdown() {
         if (enabled) {
             subscriber.shutdownSubscriber();
@@ -100,146 +87,85 @@ public class ProxyManager {
     }
 
     public void broadcastGameStart(@NotNull GameType gameType, @NotNull String gameData, long startTime) {
-        if (!enabled) return;
-        LoggerUtils.info("=== BROADCASTING GAME START ===");
-        LoggerUtils.info("Type: {}", gameType);
-        LoggerUtils.info("Data: {}", gameData);
-        LoggerUtils.info("Time: {}", startTime);
-        LoggerUtils.info("==============================");
+        if (!enabled || !isMasterServer) return;
+        LoggerUtils.info("Broadcasting GAME_START - Type: {}, Data: {}", gameType, gameData);
         publisher.publishGameStart(gameType, gameData, startTime);
     }
 
     public void broadcastGameStop(@NotNull GameType gameType) {
-        if (!enabled) return;
+        if (!enabled || !isMasterServer) return;
         publisher.publishGameStop(gameType);
     }
 
     public void broadcastGameTimeout(@NotNull GameType gameType, @NotNull String correctAnswer) {
-        if (!enabled) return;
+        if (!enabled || !isMasterServer) return;
+        LoggerUtils.info("Broadcasting GAME_TIMEOUT - Type: {}, Answer: {}", gameType, correctAnswer);
         publisher.publishGameTimeout(gameType, correctAnswer);
     }
 
     public void broadcastPlayerWin(@NotNull Player player, @NotNull GameType gameType, double timeTaken) {
-        if (!enabled) return;
+        if (!enabled || !isMasterServer) return;
+        LoggerUtils.info("Broadcasting PLAYER_WIN - Player: {}, Type: {}, Time: {}",
+                player.getName(), gameType, timeTaken);
         publisher.publishPlayerWin(player.getName(), gameType, timeTaken);
     }
 
     public void handleRemoteGameStart(@NotNull GameType gameType, @NotNull String gameData, long startTime) {
-        LoggerUtils.info("=== HANDLE REMOTE GAME START (ENTRY) ===");
-        LoggerUtils.info("Thread: {}", Thread.currentThread().getName());
+        LoggerUtils.info("=== HANDLE REMOTE GAME START ===");
         LoggerUtils.info("Game Type: {}", gameType);
-        LoggerUtils.info("Game Data: {}", gameData);
+        LoggerUtils.info("Game Data: '{}'", gameData);
         LoggerUtils.info("Start Time: {}", startTime);
-        LoggerUtils.info("Is Primary Thread: {}", plugin.getServer().isPrimaryThread());
 
         plugin.getScheduler().runTask(() -> {
-            LoggerUtils.info("=== HANDLE REMOTE GAME START (SCHEDULER TASK) ===");
-            LoggerUtils.info("Thread: {}", Thread.currentThread().getName());
-            LoggerUtils.info("Is Primary Thread NOW: {}", plugin.getServer().isPrimaryThread());
-
-            LoggerUtils.info("Received remote game start: {} with data: '{}'", gameType, gameData);
-
             LoggerUtils.info("Stopping all existing games...");
             GameManager.stopAllGames();
 
-            boolean wasEnabled = this.enabled;
-            LoggerUtils.info("Temporarily disabling Redis (was: {})", wasEnabled);
-            this.enabled = false;
+            LoggerUtils.info("Creating game handler for: {}", gameType);
+            GameHandler handler = createGameHandler(gameType);
 
-            try {
-                LoggerUtils.info("Creating game handler for: {}", gameType);
-                GameHandler handler = createGameHandler(gameType);
+            LoggerUtils.info("Starting game as remote with data: '{}'", gameData);
+            handler.startAsRemote(startTime, gameData);
 
-                LoggerUtils.info("Starting game as remote...");
-                LoggerUtils.info("  - Remote Start Time: {}", startTime);
-                LoggerUtils.info("  - Game Data: {}", gameData);
+            LoggerUtils.info("Adding game to GameManager...");
+            GameManager.addGame(gameType, handler);
 
-                handler.startAsRemote(startTime, gameData);
-
-                LoggerUtils.info("Adding game to GameManager...");
-                GameManager.addGame(gameType, handler);
-
-                LoggerUtils.info("✓ Remote game started successfully!");
-            } catch (Exception e) {
-                LoggerUtils.error("✗ ERROR starting remote game: " + e.getMessage());
-                e.printStackTrace();
-            } finally {
-                LoggerUtils.info("Re-enabling Redis (to: {})", wasEnabled);
-                this.enabled = wasEnabled;
-            }
-
-            LoggerUtils.info("=================================================");
+            LoggerUtils.info("✓ Remote game started successfully!");
         });
-
-        LoggerUtils.info("======================================");
     }
 
     public void handleRemoteGameStop(@NotNull GameType gameType) {
-        plugin.getScheduler().runTask(() -> GameManager.stopGame(gameType));
+        plugin.getScheduler().runTask(() -> {
+            LoggerUtils.info("Remote game stop received: {}", gameType);
+            GameManager.stopGame(gameType);
+        });
     }
 
     public void handleRemoteGameTimeout(@NotNull GameType gameType, @NotNull String correctAnswer) {
         plugin.getScheduler().runTask(() -> {
-            String messageKey = getTimeoutMessageKey(gameType);
-            String message = MessageKeys.valueOf(messageKey).getMessage();
+            LoggerUtils.info("Remote game timeout - Type: {}, Answer: {}", gameType, correctAnswer);
 
-            // CRITICAL FIX: Handle ALL game types properly
-            switch (gameType) {
-                case RANGE -> {
-                    // RANGE needs {answer}, {min}, {max}
-                    String rangeConfig = plugin.getConfiguration().getString("range.range", "0-20");
-                    String[] rangeParts = rangeConfig.split("-");
-                    String min = rangeParts.length > 0 ? rangeParts[0] : "0";
-                    String max = rangeParts.length > 1 ? rangeParts[1] : "20";
-
-                    message = message.replace("{answer}", correctAnswer)
-                            .replace("{min}", min)
-                            .replace("{max}", max);
-                }
-                case MATH, WHO_AM_I, WORD_STOP, WORD_GUESSER, REVERSE, FILL_OUT, HANGMAN -> {
-                    // These games only need {answer}
-                    message = message.replace("{answer}", correctAnswer);
-                }
-                case RANDOM_CHARACTERS, CRAFTING -> {
-                    // These games don't have answer in the message
-                    // No placeholder replacement needed
-                }
-            }
-
-            LoggerUtils.info("Broadcasting timeout message: {}", message);
+            String message = getTimeoutMessage(gameType, correctAnswer);
             GameUtils.broadcast(message);
-            LoggerUtils.info("Remote game timeout: {} (answer: {})", gameType, correctAnswer);
-        });
-    }
 
-    @NotNull
-    private GameHandler createGameHandler(@NotNull GameType gameType) {
-        return switch (gameType) {
-            case MATH -> new GameMath();
-            case WHO_AM_I -> new GameWhoAmI();
-            case WORD_GUESSER -> new GameWordGuess();
-            case RANDOM_CHARACTERS -> new GameRandomCharacters();
-            case WORD_STOP -> new GameWordStop();
-            case REVERSE -> new GameReverse();
-            case FILL_OUT -> new GameFillOut();
-            case CRAFTING -> new GameCrafting();
-            case HANGMAN -> new GameHangman();
-            case RANGE -> new GameRange();
-        };
+            GameManager.stopGame(gameType);
+        });
     }
 
     public void handleRemotePlayerWin(@NotNull String playerName, @NotNull GameType gameType, double timeTaken) {
         plugin.getScheduler().runTask(() -> {
-            String messageKey = getWinMessageKey(gameType);
             String formattedTime = String.format("%.2f", timeTaken);
-            String message = MessageKeys.valueOf(messageKey).getMessage()
+            String message = getWinMessage(gameType)
                     .replace("{player}", playerName)
                     .replace("{time}", formattedTime);
 
-            // CRITICAL: Broadcast win message on ALL servers (both master and slave)
-            GameUtils.broadcast(message);
+            if (gameType == GameType.RANGE) {
+                message = message.replace("{number}", "?");
+            }
 
-            LoggerUtils.info("Remote player win: {} in {} ({}s)", playerName, gameType, formattedTime);
+            GameUtils.broadcast(message);
+            LoggerUtils.info("Remote player win broadcast: {} in {} ({}s)", playerName, gameType, formattedTime);
+
+            GameManager.stopGame(gameType);
         });
     }
 
@@ -273,34 +199,63 @@ public class ProxyManager {
     }
 
     @NotNull
-    private String getWinMessageKey(@NotNull GameType gameType) {
+    private GameHandler createGameHandler(@NotNull GameType gameType) {
         return switch (gameType) {
-            case MATH -> "MATH_GAME_WIN";
-            case WHO_AM_I -> "WHO_AM_I_WIN";
-            case WORD_GUESSER -> "WORD_GUESSER_WIN";
-            case RANDOM_CHARACTERS -> "RANDOM_CHARACTERS_WIN";
-            case WORD_STOP -> "WORD_STOP_WIN";
-            case REVERSE -> "REVERSE_WIN";
-            case FILL_OUT -> "FILL_OUT_WIN";
-            case CRAFTING -> "CRAFTING_WIN";
-            case HANGMAN -> "HANGMAN_WIN";
-            case RANGE -> "RANGE_WIN";
+            case MATH -> new GameMath();
+            case WHO_AM_I -> new GameWhoAmI();
+            case WORD_GUESSER -> new GameWordGuess();
+            case RANDOM_CHARACTERS -> new GameRandomCharacters();
+            case WORD_STOP -> new GameWordStop();
+            case REVERSE -> new GameReverse();
+            case FILL_OUT -> new GameFillOut();
+            case CRAFTING -> new GameCrafting();
+            case HANGMAN -> new GameHangman();
+            case RANGE -> new GameRange();
         };
     }
 
     @NotNull
-    private String getTimeoutMessageKey(@NotNull GameType gameType) {
+    private String getWinMessage(@NotNull GameType gameType) {
         return switch (gameType) {
-            case MATH -> "MATH_GAME_NO_WIN";
-            case WHO_AM_I -> "WHO_AM_I_NO_WIN";
-            case WORD_GUESSER -> "WORD_GUESSER_NO_WIN";
-            case RANDOM_CHARACTERS -> "RANDOM_CHARACTERS_NO_WIN";
-            case WORD_STOP -> "WORD_STOP_NO_WIN";
-            case REVERSE -> "REVERSE_NO_WIN";
-            case FILL_OUT -> "FILL_OUT_NO_WIN";
-            case CRAFTING -> "CRAFTING_NO_WIN";
-            case HANGMAN -> "HANGMAN_NO_WIN";
-            case RANGE -> "RANGE_NO_WIN";
+            case MATH -> MessageKeys.MATH_GAME_WIN.getMessage();
+            case WHO_AM_I -> MessageKeys.WHO_AM_I_WIN.getMessage();
+            case WORD_GUESSER -> MessageKeys.WORD_GUESSER_WIN.getMessage();
+            case RANDOM_CHARACTERS -> MessageKeys.RANDOM_CHARACTERS_WIN.getMessage();
+            case WORD_STOP -> MessageKeys.WORD_STOP_WIN.getMessage();
+            case REVERSE -> MessageKeys.REVERSE_WIN.getMessage();
+            case FILL_OUT -> MessageKeys.FILL_OUT_WIN.getMessage();
+            case CRAFTING -> MessageKeys.CRAFTING_WIN.getMessage();
+            case HANGMAN -> MessageKeys.HANGMAN_WIN.getMessage();
+            case RANGE -> MessageKeys.RANGE_WIN.getMessage();
         };
+    }
+
+    @NotNull
+    private String getTimeoutMessage(@NotNull GameType gameType, @NotNull String correctAnswer) {
+        String message = switch (gameType) {
+            case MATH -> MessageKeys.MATH_GAME_NO_WIN.getMessage();
+            case WHO_AM_I -> MessageKeys.WHO_AM_I_NO_WIN.getMessage();
+            case WORD_GUESSER -> MessageKeys.WORD_GUESSER_NO_WIN.getMessage();
+            case RANDOM_CHARACTERS -> MessageKeys.RANDOM_CHARACTERS_NO_WIN.getMessage();
+            case WORD_STOP -> MessageKeys.WORD_STOP_NO_WIN.getMessage();
+            case REVERSE -> MessageKeys.REVERSE_NO_WIN.getMessage();
+            case FILL_OUT -> MessageKeys.FILL_OUT_NO_WIN.getMessage();
+            case CRAFTING -> MessageKeys.CRAFTING_NO_WIN.getMessage();
+            case HANGMAN -> MessageKeys.HANGMAN_NO_WIN.getMessage();
+            case RANGE -> MessageKeys.RANGE_NO_WIN.getMessage();
+        };
+
+        message = message.replace("{answer}", correctAnswer);
+        message = message.replace("{word}", correctAnswer);
+
+        if (gameType == GameType.RANGE) {
+            String rangeConfig = plugin.getConfiguration().getString("range.range", "0-20");
+            String[] rangeParts = rangeConfig.split("-");
+            String min = rangeParts.length > 0 ? rangeParts[0] : "0";
+            String max = rangeParts.length > 1 ? rangeParts[1] : "20";
+            message = message.replace("{min}", min).replace("{max}", max);
+        }
+
+        return message;
     }
 }

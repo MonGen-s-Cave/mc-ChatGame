@@ -15,8 +15,10 @@ public abstract class GameHandler {
     @Getter protected GameState state = GameState.INACTIVE;
     protected Object gameData;
     protected boolean gameStarted = false;
-    protected boolean isRemoteGame = false;
+    @Getter protected boolean isRemoteGame = false;
     @Getter protected long startTime;
+
+    @Getter protected String remoteGameData = null;
 
     private static GameHandler currentActiveGame = null;
 
@@ -25,11 +27,10 @@ public abstract class GameHandler {
     public abstract void handleAnswer(@NotNull Player player, @NotNull String answer);
     protected abstract GameType getGameType();
 
-    // Remote game indításhoz
     public void startAsRemote(long remoteStartTime, @NotNull String remoteGameData) {
         this.isRemoteGame = true;
         this.startTime = remoteStartTime;
-        this.gameData = remoteGameData;
+        this.remoteGameData = remoteGameData;
         this.state = GameState.INACTIVE;
         start();
     }
@@ -40,12 +41,12 @@ public abstract class GameHandler {
         gameStarted = false;
         isRemoteGame = false;
         startTime = 0;
+        remoteGameData = null;
 
         if (currentActiveGame == this) currentActiveGame = null;
 
         GameManager.removeInactiveGames();
 
-        // FIXED: Only master broadcasts game stop
         ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
         if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
             proxyManager.broadcastGameStop(getGameType());
@@ -64,13 +65,12 @@ public abstract class GameHandler {
             StreakManager.getInstance().onGameStart();
             gameStarted = true;
 
-            // FIXED: Only master broadcasts game start
             ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
             if (!isRemoteGame && proxyManager.isEnabled() && proxyManager.isMasterServer()) {
                 String dataToSend = getOriginalGameData();
                 proxyManager.broadcastGameStart(
                         getGameType(),
-                        dataToSend != null ? dataToSend : (getGameData() != null ? getGameData() : ""),
+                        dataToSend != null ? dataToSend : "",
                         startTime
                 );
             }
@@ -84,7 +84,6 @@ public abstract class GameHandler {
     protected void handlePlayerWin(@NotNull Player winner) {
         StreakManager.getInstance().onPlayerWin(winner);
 
-        // FIXED: Only master broadcasts player win
         ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
         if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
             long endTime = System.currentTimeMillis();
@@ -95,9 +94,6 @@ public abstract class GameHandler {
 
     protected void handleGameTimeout() {
         StreakManager.getInstance().onGameTimeout();
-        
-        // NOTE: Timeout broadcasts now handled in individual game classes
-        // Each game class decides what data to send (e.g., correct answer)
     }
 
     @Nullable
