@@ -1,17 +1,11 @@
 # Docs: https://docs.mongenscave.com/free-products/mc-chatgame
-#
-# At the no-win messages you can apply {answer} to get the correct answer!
-# Except:
-# Random Characters
-# Crafting
-#
-
 
 prefix: "&#42f598[ChatGame]"
 
 messages:
   reload: "%prefix% &aYou have successfully reloaded the files!"
   no-permission: "%prefix% &cYou don't have permission for this!"
+
   who-am-i:
     - ""
     - "&8&l&m--------------------------"
@@ -22,6 +16,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   word-stop:
     - ""
     - "&8&l&m--------------------------"
@@ -32,6 +27,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   word-guesser:
     - ""
     - "&8&l&m--------------------------"
@@ -42,6 +38,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   math-game:
     - ""
     - "&8&l&m--------------------------"
@@ -52,6 +49,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   reverse:
     - ""
     - "&8&l&m--------------------------"
@@ -62,6 +60,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   crafting:
     - ""
     - "&8&l&m--------------------------"
@@ -72,6 +71,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   fill-out:
     - ""
     - "&8&l&m--------------------------"
@@ -82,6 +82,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   random-characters:
     - ""
     - "&8&l&m--------------------------"
@@ -92,6 +93,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   range:
     - ""
     - "&8&l&m--------------------------"
@@ -102,6 +104,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   hangman:
     - ""
     - "&8&l&m--------------------------"
@@ -114,6 +117,7 @@ messages:
     - ""
     - "&8&l&m--------------------------"
     - ""
+
   math-game-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
   range-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
   crafting-win: "%prefix% &#42f598{player} &fwon the crafting game! &8(&7{time}&8)"
@@ -125,16 +129,20 @@ messages:
   fill-out-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
   random-characters-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
   hangman-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  math-game-no-win: "%prefix% &cNo one guessed the correct answer!"
-  range-no-win: "%prefix% &cNo one guessed the correct answer!"
-  who-am-i-no-win: "%prefix% &cNo one guessed the correct answer!"
-  crafting-no-win: "%prefix% &cNo one crafted the correct item!"
-  word-stop-no-win: "%prefix% &cNo one guessed the correct answer!"
-  word-guesser-no-win: "%prefix% &cNo one guessed the correct answer!"
-  copy-no-win: "%prefix% &cNo one guessed the correct answer!"
-  reverse-no-win: "%prefix% &cNo one guessed the correct answer!"
-  fill-out-no-win: "%prefix% &cNo one guessed the correct answer!"
-  hangman-no-win: "%prefix% &cNo one guessed the correct answer!"
+
+  math-game-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+  who-am-i-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+  word-stop-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+  word-guesser-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+  copy-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+  reverse-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+  fill-out-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+  hangman-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
+
   random-characters-no-win: "%prefix% &cNo one guessed the correct answer!"
+  crafting-no-win: "%prefix% &cNo one crafted the correct item!"
+
+  range-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8) &7Range: &e{min} ↔ {max}"
+
   no-crafting-game: "%prefix% &cNo crafting game is active!"
   update-notify: "%prefix% &aA new update for the plugin is now available! &8(&c{your} &f→ &e{latest}&8)"

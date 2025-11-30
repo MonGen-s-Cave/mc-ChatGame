@@ -101,6 +101,11 @@ public class ProxyManager {
 
     public void broadcastGameStart(@NotNull GameType gameType, @NotNull String gameData, long startTime) {
         if (!enabled) return;
+        LoggerUtils.info("=== BROADCASTING GAME START ===");
+        LoggerUtils.info("Type: {}", gameType);
+        LoggerUtils.info("Data: {}", gameData);
+        LoggerUtils.info("Time: {}", startTime);
+        LoggerUtils.info("==============================");
         publisher.publishGameStart(gameType, gameData, startTime);
     }
 
@@ -120,24 +125,53 @@ public class ProxyManager {
     }
 
     public void handleRemoteGameStart(@NotNull GameType gameType, @NotNull String gameData, long startTime) {
+        LoggerUtils.info("=== HANDLE REMOTE GAME START (ENTRY) ===");
+        LoggerUtils.info("Thread: {}", Thread.currentThread().getName());
+        LoggerUtils.info("Game Type: {}", gameType);
+        LoggerUtils.info("Game Data: {}", gameData);
+        LoggerUtils.info("Start Time: {}", startTime);
+        LoggerUtils.info("Is Primary Thread: {}", plugin.getServer().isPrimaryThread());
+
         plugin.getScheduler().runTask(() -> {
+            LoggerUtils.info("=== HANDLE REMOTE GAME START (SCHEDULER TASK) ===");
+            LoggerUtils.info("Thread: {}", Thread.currentThread().getName());
+            LoggerUtils.info("Is Primary Thread NOW: {}", plugin.getServer().isPrimaryThread());
+
             LoggerUtils.info("Received remote game start: {} with data: '{}'", gameType, gameData);
 
+            LoggerUtils.info("Stopping all existing games...");
             GameManager.stopAllGames();
 
             boolean wasEnabled = this.enabled;
+            LoggerUtils.info("Temporarily disabling Redis (was: {})", wasEnabled);
             this.enabled = false;
 
             try {
+                LoggerUtils.info("Creating game handler for: {}", gameType);
                 GameHandler handler = createGameHandler(gameType);
+
+                LoggerUtils.info("Starting game as remote...");
+                LoggerUtils.info("  - Remote Start Time: {}", startTime);
+                LoggerUtils.info("  - Game Data: {}", gameData);
+
                 handler.startAsRemote(startTime, gameData);
+
+                LoggerUtils.info("Adding game to GameManager...");
                 GameManager.addGame(gameType, handler);
 
-                LoggerUtils.info("Remote game started successfully");
+                LoggerUtils.info("✓ Remote game started successfully!");
+            } catch (Exception e) {
+                LoggerUtils.error("✗ ERROR starting remote game: " + e.getMessage());
+                e.printStackTrace();
             } finally {
+                LoggerUtils.info("Re-enabling Redis (to: {})", wasEnabled);
                 this.enabled = wasEnabled;
             }
+
+            LoggerUtils.info("=================================================");
         });
+
+        LoggerUtils.info("======================================");
     }
 
     public void handleRemoteGameStop(@NotNull GameType gameType) {
@@ -149,14 +183,30 @@ public class ProxyManager {
             String messageKey = getTimeoutMessageKey(gameType);
             String message = MessageKeys.valueOf(messageKey).getMessage();
 
-            if (gameType == GameType.RANGE) {
-                message = message.replace("{answer}", correctAnswer)
-                        .replace("{min}", plugin.getConfiguration().getString("range.range", "0-20").split("-")[0])
-                        .replace("{max}", plugin.getConfiguration().getString("range.range", "0-20").split("-")[1]);
-            } else {
-                message = message.replace("{answer}", correctAnswer);
+            // CRITICAL FIX: Handle ALL game types properly
+            switch (gameType) {
+                case RANGE -> {
+                    // RANGE needs {answer}, {min}, {max}
+                    String rangeConfig = plugin.getConfiguration().getString("range.range", "0-20");
+                    String[] rangeParts = rangeConfig.split("-");
+                    String min = rangeParts.length > 0 ? rangeParts[0] : "0";
+                    String max = rangeParts.length > 1 ? rangeParts[1] : "20";
+
+                    message = message.replace("{answer}", correctAnswer)
+                            .replace("{min}", min)
+                            .replace("{max}", max);
+                }
+                case MATH, WHO_AM_I, WORD_STOP, WORD_GUESSER, REVERSE, FILL_OUT, HANGMAN -> {
+                    // These games only need {answer}
+                    message = message.replace("{answer}", correctAnswer);
+                }
+                case RANDOM_CHARACTERS, CRAFTING -> {
+                    // These games don't have answer in the message
+                    // No placeholder replacement needed
+                }
             }
 
+            LoggerUtils.info("Broadcasting timeout message: {}", message);
             GameUtils.broadcast(message);
             LoggerUtils.info("Remote game timeout: {} (answer: {})", gameType, correctAnswer);
         });
@@ -186,7 +236,7 @@ public class ProxyManager {
                     .replace("{player}", playerName)
                     .replace("{time}", formattedTime);
 
-            // FIXED: This is the ONLY place where slave servers broadcast win messages
+            // CRITICAL: Broadcast win message on ALL servers (both master and slave)
             GameUtils.broadcast(message);
 
             LoggerUtils.info("Remote player win: {} in {} ({}s)", playerName, gameType, formattedTime);

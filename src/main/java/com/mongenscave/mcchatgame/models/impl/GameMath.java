@@ -45,9 +45,8 @@ public final class GameMath extends GameHandler {
         String[] problemData = parseProblem(problemString);
         if (problemData == null) return;
 
-        if (!isRemoteGame) {
-            GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
-        }
+        // FIXED: Always play sound on all servers (both master and slave)
+        GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
 
         this.correctAnswer = problemData[1];
         this.gameData = problemData[0];
@@ -59,6 +58,7 @@ public final class GameMath extends GameHandler {
         this.winnerDetermined.set(false);
         this.setAsActive();
 
+        // CRITICAL FIX: Always announce the problem on all servers
         announceProblem();
         scheduleTimeout();
     }
@@ -88,9 +88,17 @@ public final class GameMath extends GameHandler {
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
 
-                        // FIXED: Broadcast handled via ProxyManager in handlePlayerWin()
-                        // No local broadcast here to avoid duplication
-                        
+                        // FIXED: Only master broadcasts win (ProxyManager will handle it)
+                        if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                                McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                            // Win broadcast is handled by ProxyManager via handlePlayerWin()
+                        } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                            // No Redis - broadcast locally
+                            GameUtils.broadcast(MessageKeys.MATH_GAME_WIN.getMessage()
+                                    .replace("{player}", player.getName())
+                                    .replace("{time}", formattedTime));
+                        }
+
                         handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
@@ -133,11 +141,17 @@ public final class GameMath extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                // FIXED: Broadcast handled via ProxyManager
-                if (McChatGame.getInstance().getProxyManager().isEnabled() && 
-                    McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                // FIXED: Proper timeout handling for both master and slave
+                if (McChatGame.getInstance().getProxyManager().isEnabled() &&
+                        McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    // Master broadcasts timeout
                     McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
+                } else if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
+                    // No Redis - local broadcast
+                    GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage()
+                            .replace("{answer}", correctAnswer));
                 }
+                // Slave servers will receive timeout via Redis subscriber
 
                 handleGameTimeout();
                 cleanup();

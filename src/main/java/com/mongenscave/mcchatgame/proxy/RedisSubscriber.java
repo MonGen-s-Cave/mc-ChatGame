@@ -49,7 +49,14 @@ public class RedisSubscriber extends JedisPubSub {
                     channels[i] = channelPrefix + ":" + RedisMessageType.values()[i].getChannel();
                 }
 
-                LoggerUtils.info("Subscribing to {} Redis channels...", channels.length);
+                LoggerUtils.info("=== REDIS SUBSCRIBER STARTING ===");
+                LoggerUtils.info("Server ID: {}", serverId);
+                LoggerUtils.info("Channel Prefix: {}", channelPrefix);
+                LoggerUtils.info("Subscribing to {} Redis channels:", channels.length);
+                for (String channel : channels) {
+                    LoggerUtils.info("  - {}", channel);
+                }
+                LoggerUtils.info("=================================");
 
                 jedis.subscribe(this, channels);
             } catch (Exception exception) {
@@ -86,6 +93,11 @@ public class RedisSubscriber extends JedisPubSub {
 
     @Override
     public void onMessage(String channel, String message) {
+        LoggerUtils.info("=== REDIS MESSAGE RECEIVED ===");
+        LoggerUtils.info("Channel: {}", channel);
+        LoggerUtils.info("Raw Message: {}", message);
+        LoggerUtils.info("=============================");
+
         executorService.submit(() -> handleMessage(message));
     }
 
@@ -94,41 +106,76 @@ public class RedisSubscriber extends JedisPubSub {
             JsonObject json = gson.fromJson(message, JsonObject.class);
 
             String messageServerId = json.get("serverId").getAsString();
+
+            LoggerUtils.info("=== PROCESSING REDIS MESSAGE ===");
+            LoggerUtils.info("Message Server ID: {}", messageServerId);
+            LoggerUtils.info("Our Server ID: {}", serverId);
+
             if (messageServerId.equals(serverId)) {
-                // Saját üzenetünk - ignoráljuk
+                LoggerUtils.info("IGNORING: This is our own message");
+                LoggerUtils.info("===============================");
                 return;
             }
 
             String typeStr = json.get("type").getAsString();
             RedisMessageType type = RedisMessageType.valueOf(typeStr);
 
+            LoggerUtils.info("Message Type: {}", type);
+            LoggerUtils.info("Message Content: {}", json);
+
             switch (type) {
-                case GAME_START -> handleGameStart(json); // <--- MÓDOSÍTVA
-                case GAME_STOP -> handleGameStop(json);
-                case GAME_TIMEOUT -> handleGameTimeout(json);
-                case PLAYER_WIN -> handlePlayerWin(json);
-                case BROADCAST_MESSAGE -> handleBroadcastMessage(json);
-                case BROADCAST_SOUND -> handleBroadcastSound(json);
+                case GAME_START -> {
+                    LoggerUtils.info(">>> HANDLING GAME_START <<<");
+                    handleGameStart(json);
+                }
+                case GAME_STOP -> {
+                    LoggerUtils.info(">>> HANDLING GAME_STOP <<<");
+                    handleGameStop(json);
+                }
+                case GAME_TIMEOUT -> {
+                    LoggerUtils.info(">>> HANDLING GAME_TIMEOUT <<<");
+                    handleGameTimeout(json);
+                }
+                case PLAYER_WIN -> {
+                    LoggerUtils.info(">>> HANDLING PLAYER_WIN <<<");
+                    handlePlayerWin(json);
+                }
+                case BROADCAST_MESSAGE -> {
+                    LoggerUtils.info(">>> HANDLING BROADCAST_MESSAGE <<<");
+                    handleBroadcastMessage(json);
+                }
+                case BROADCAST_SOUND -> {
+                    LoggerUtils.info(">>> HANDLING BROADCAST_SOUND <<<");
+                    handleBroadcastSound(json);
+                }
             }
 
+            LoggerUtils.info("===============================");
+
         } catch (Exception exception) {
-            LoggerUtils.error("Error handling Redis message: " + exception.getMessage());
+            LoggerUtils.error("=== ERROR HANDLING REDIS MESSAGE ===");
+            LoggerUtils.error("Error: " + exception.getMessage());
             exception.printStackTrace();
+            LoggerUtils.error("===================================");
         }
     }
 
-    private void handleGameStart(@NotNull JsonObject json) { // <--- ÚJ PARAMÉTER
+    private void handleGameStart(@NotNull JsonObject json) {
         GameType gameType = GameType.valueOf(json.get("gameType").getAsString());
         String gameData = json.get("gameData").getAsString();
         long startTime = json.get("startTime").getAsLong();
 
-        LoggerUtils.info("Received remote game start: {} with data: {}", gameType, gameData);
+        LoggerUtils.info("Game Type: {}", gameType);
+        LoggerUtils.info("Game Data: {}", gameData);
+        LoggerUtils.info("Start Time: {}", startTime);
+        LoggerUtils.info("Calling proxyManager.handleRemoteGameStart()...");
 
         proxyManager.handleRemoteGameStart(gameType, gameData, startTime);
     }
 
     private void handleGameStop(@NotNull JsonObject json) {
         GameType gameType = GameType.valueOf(json.get("gameType").getAsString());
+        LoggerUtils.info("Stopping game: {}", gameType);
         proxyManager.handleRemoteGameStop(gameType);
     }
 
@@ -136,6 +183,7 @@ public class RedisSubscriber extends JedisPubSub {
         GameType gameType = GameType.valueOf(json.get("gameType").getAsString());
         String correctAnswer = json.get("correctAnswer").getAsString();
 
+        LoggerUtils.info("Game timeout - Type: {}, Answer: {}", gameType, correctAnswer);
         proxyManager.handleRemoteGameTimeout(gameType, correctAnswer);
     }
 
@@ -144,6 +192,7 @@ public class RedisSubscriber extends JedisPubSub {
         GameType gameType = GameType.valueOf(json.get("gameType").getAsString());
         double timeTaken = json.get("timeTaken").getAsDouble();
 
+        LoggerUtils.info("Player win - Player: {}, Type: {}, Time: {}", playerName, gameType, timeTaken);
         proxyManager.handleRemotePlayerWin(playerName, gameType, timeTaken);
     }
 
@@ -151,21 +200,23 @@ public class RedisSubscriber extends JedisPubSub {
         String messageKey = json.get("messageKey").getAsString();
         JsonObject placeholders = json.getAsJsonObject("placeholders");
 
+        LoggerUtils.info("Broadcasting message: {}", messageKey);
         proxyManager.handleRemoteBroadcast(messageKey, placeholders);
     }
 
     private void handleBroadcastSound(@NotNull JsonObject json) {
         String sound = json.get("sound").getAsString();
+        LoggerUtils.info("Playing sound: {}", sound);
         proxyManager.handleRemoteSound(sound);
     }
 
     @Override
     public void onSubscribe(String channel, int subscribedChannels) {
-        LoggerUtils.info("Subscribed to channel: {} (Total: {})", channel, subscribedChannels);
+        LoggerUtils.info("✓ Subscribed to channel: {} (Total: {})", channel, subscribedChannels);
     }
 
     @Override
     public void onUnsubscribe(String channel, int subscribedChannels) {
-        LoggerUtils.info("Unsubscribed from channel: {} (Remaining: {})", channel, subscribedChannels);
+        LoggerUtils.info("✗ Unsubscribed from channel: {} (Remaining: {})", channel, subscribedChannels);
     }
 }
