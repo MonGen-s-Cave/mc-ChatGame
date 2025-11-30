@@ -5,16 +5,7 @@ import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameType;
 import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
 import com.mongenscave.mcchatgame.models.GameHandler;
-import com.mongenscave.mcchatgame.models.impl.GameCrafting;
-import com.mongenscave.mcchatgame.models.impl.GameFillOut;
-import com.mongenscave.mcchatgame.models.impl.GameHangman;
-import com.mongenscave.mcchatgame.models.impl.GameMath;
-import com.mongenscave.mcchatgame.models.impl.GameRandomCharacters;
-import com.mongenscave.mcchatgame.models.impl.GameRange;
-import com.mongenscave.mcchatgame.models.impl.GameReverse;
-import com.mongenscave.mcchatgame.models.impl.GameWhoAmI;
-import com.mongenscave.mcchatgame.models.impl.GameWordGuess;
-import com.mongenscave.mcchatgame.models.impl.GameWordStop;
+import com.mongenscave.mcchatgame.models.impl.*;
 import com.mongenscave.mcchatgame.proxy.RedisConfig;
 import com.mongenscave.mcchatgame.proxy.RedisPublisher;
 import com.mongenscave.mcchatgame.proxy.RedisSubscriber;
@@ -49,18 +40,17 @@ public class ProxyManager {
         if (!plugin.getConfiguration().getBoolean("redis.enabled", false)) {
             LoggerUtils.info("Redis cross-server support is disabled");
             enabled = false;
-            isMasterServer = true; // Ha Redis nincs, akkor ez a szerver master
+            isMasterServer = true;
             return;
         }
 
-        // Ellenőrizzük a server role-t <--- ÚJ
         String serverRole = plugin.getConfiguration().getString("redis.server-role", "master").toLowerCase();
         isMasterServer = serverRole.equals("master");
 
         if (!redisConfig.connect()) {
             LoggerUtils.error("Failed to connect to Redis - cross-server features disabled");
             enabled = false;
-            isMasterServer = true; // Ha Redis fail, akkor ez a szerver master
+            isMasterServer = true;
             return;
         }
 
@@ -82,7 +72,7 @@ public class ProxyManager {
 
         LoggerUtils.info("Redis cross-server support enabled");
         LoggerUtils.info("Server ID: {}", serverId);
-        LoggerUtils.info("Server Role: {}", isMasterServer ? "MASTER (starts games)" : "SLAVE (receives games)"); // <--- ÚJ LOG
+        LoggerUtils.info("Server Role: {}", isMasterServer ? "MASTER (starts games)" : "SLAVE (receives games)");
     }
 
     public void testConnection() {
@@ -124,11 +114,6 @@ public class ProxyManager {
         publisher.publishGameTimeout(gameType, correctAnswer);
     }
 
-    public void broadcastPlayerAnswer(@NotNull Player player, @NotNull String answer, @NotNull GameType gameType) {
-        if (!enabled) return;
-        publisher.publishPlayerAnswer(player.getName(), answer, gameType);
-    }
-
     public void broadcastPlayerWin(@NotNull Player player, @NotNull GameType gameType, double timeTaken) {
         if (!enabled) return;
         publisher.publishPlayerWin(player.getName(), gameType, timeTaken);
@@ -145,7 +130,6 @@ public class ProxyManager {
 
             try {
                 GameHandler handler = createGameHandler(gameType);
-
                 handler.startAsRemote(startTime, gameData);
                 GameManager.addGame(gameType, handler);
 
@@ -165,9 +149,7 @@ public class ProxyManager {
             String messageKey = getTimeoutMessageKey(gameType);
             String message = MessageKeys.valueOf(messageKey).getMessage();
 
-            // Apply answer placeholder for games that have it
             if (gameType == GameType.RANGE) {
-                // For RANGE, we need to parse the answer and format it properly
                 message = message.replace("{answer}", correctAnswer)
                         .replace("{min}", plugin.getConfiguration().getString("range.range", "0-20").split("-")[0])
                         .replace("{max}", plugin.getConfiguration().getString("range.range", "0-20").split("-")[1]);
@@ -176,7 +158,6 @@ public class ProxyManager {
             }
 
             GameUtils.broadcast(message);
-
             LoggerUtils.info("Remote game timeout: {} (answer: {})", gameType, correctAnswer);
         });
     }
@@ -205,6 +186,7 @@ public class ProxyManager {
                     .replace("{player}", playerName)
                     .replace("{time}", formattedTime);
 
+            // FIXED: This is the ONLY place where slave servers broadcast win messages
             GameUtils.broadcast(message);
 
             LoggerUtils.info("Remote player win: {} in {} ({}s)", playerName, gameType, formattedTime);

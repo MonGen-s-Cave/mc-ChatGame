@@ -33,13 +33,10 @@ public final class GameMath extends GameHandler {
 
         String problemString;
 
-        // Ellenőrizzük hogy remote game-e
         if (isRemoteGame && gameData != null && !gameData.toString().isEmpty()) {
-            // Remote game - használjuk a kapott gameData-t
             problemString = gameData.toString();
             LoggerUtils.info("Starting remote math game with problem: {}", problemString);
         } else {
-            // Local game - generáljunk új problémát
             List<String> problems = ConfigKeys.MATH_PROBLEMS.getList();
             if (problems.isEmpty()) return;
             problemString = problems.get(random.nextInt(problems.size()));
@@ -48,7 +45,6 @@ public final class GameMath extends GameHandler {
         String[] problemData = parseProblem(problemString);
         if (problemData == null) return;
 
-        // FIXED: Only play sound on master server (local games)
         if (!isRemoteGame) {
             GameUtils.playSoundToEveryone(ConfigKeys.SOUND_START_ENABLED, ConfigKeys.SOUND_START_SOUND);
         }
@@ -56,16 +52,13 @@ public final class GameMath extends GameHandler {
         this.correctAnswer = problemData[1];
         this.gameData = problemData[0];
 
-        // FIXED: For remote games, use the provided startTime from constructor
         if (!isRemoteGame) {
             this.startTime = System.currentTimeMillis();
         }
-        // Note: startTime is already set in startAsRemote() for remote games
 
         this.winnerDetermined.set(false);
         this.setAsActive();
 
-        // CRITICAL FIX: Always announce, regardless of remote/local
         announceProblem();
         scheduleTimeout();
     }
@@ -95,12 +88,9 @@ public final class GameMath extends GameHandler {
                     .thenAcceptAsync(v -> {
                         GameUtils.rewardPlayer(player);
 
-                        // LOCAL broadcast (always happens on the server where player answered)
-                        GameUtils.broadcast(MessageKeys.MATH_GAME_WIN.getMessage()
-                                .replace("{player}", player.getName())
-                                .replace("{time}", formattedTime));
-
-                        // FIXED: handlePlayerWin now checks if master before broadcasting to Redis
+                        // FIXED: Broadcast handled via ProxyManager in handlePlayerWin()
+                        // No local broadcast here to avoid duplication
+                        
                         handlePlayerWin(player);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
@@ -143,11 +133,11 @@ public final class GameMath extends GameHandler {
     private void scheduleTimeout() {
         timeoutTask = McChatGame.getInstance().getScheduler().runTaskLater(() -> {
             if (state == GameState.ACTIVE && winnerDetermined.compareAndSet(false, true)) {
-                // REMOVED: Redis broadcast - now handled in handleGameTimeout()
-                // if (McChatGame.getInstance().getProxyManager().isEnabled()) ...
-
-                // LOCAL broadcast (csak ezen a szerveren)
-                GameUtils.broadcast(MessageKeys.MATH_GAME_NO_WIN.getMessage().replace("{answer}", correctAnswer));
+                // FIXED: Broadcast handled via ProxyManager
+                if (McChatGame.getInstance().getProxyManager().isEnabled() && 
+                    McChatGame.getInstance().getProxyManager().isMasterServer()) {
+                    McChatGame.getInstance().getProxyManager().broadcastGameTimeout(getGameType(), correctAnswer);
+                }
 
                 handleGameTimeout();
                 cleanup();

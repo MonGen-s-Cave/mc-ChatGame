@@ -15,7 +15,7 @@ public abstract class GameHandler {
     @Getter protected GameState state = GameState.INACTIVE;
     protected Object gameData;
     protected boolean gameStarted = false;
-    protected boolean isRemoteGame = false; // <--- ÚJ FLAG!
+    protected boolean isRemoteGame = false;
     @Getter protected long startTime;
 
     private static GameHandler currentActiveGame = null;
@@ -25,17 +25,12 @@ public abstract class GameHandler {
     public abstract void handleAnswer(@NotNull Player player, @NotNull String answer);
     protected abstract GameType getGameType();
 
-    // ÚJ METÓDUS: Remote game indításhoz
-    // ÚJ METÓDUS: Remote game indításhoz
+    // Remote game indításhoz
     public void startAsRemote(long remoteStartTime, @NotNull String remoteGameData) {
         this.isRemoteGame = true;
         this.startTime = remoteStartTime;
         this.gameData = remoteGameData;
-
-        // CRITICAL FIX: Set state BEFORE calling start()
-        // This ensures the game is recognized as active when handleAnswer is called
-        this.state = GameState.INACTIVE; // Will be set to ACTIVE in start()
-
+        this.state = GameState.INACTIVE;
         start();
     }
 
@@ -43,15 +38,17 @@ public abstract class GameHandler {
         state = GameState.INACTIVE;
         gameData = null;
         gameStarted = false;
-        isRemoteGame = false; // <--- RESET
+        isRemoteGame = false;
         startTime = 0;
 
         if (currentActiveGame == this) currentActiveGame = null;
 
         GameManager.removeInactiveGames();
 
-        if (McChatGame.getInstance().getProxyManager().isEnabled()) {
-            McChatGame.getInstance().getProxyManager().broadcastGameStop(getGameType());
+        // FIXED: Only master broadcasts game stop
+        ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
+        if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
+            proxyManager.broadcastGameStop(getGameType());
         }
     }
 
@@ -67,11 +64,11 @@ public abstract class GameHandler {
             StreakManager.getInstance().onGameStart();
             gameStarted = true;
 
-            if (!isRemoteGame && McChatGame.getInstance().getProxyManager().isEnabled()) {
-                // FONTOS: WordGuess esetén az EREDETI szót küldjük, nem a scrambled-ot!
+            // FIXED: Only master broadcasts game start
+            ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
+            if (!isRemoteGame && proxyManager.isEnabled() && proxyManager.isMasterServer()) {
                 String dataToSend = getOriginalGameData();
-
-                McChatGame.getInstance().getProxyManager().broadcastGameStart(
+                proxyManager.broadcastGameStart(
                         getGameType(),
                         dataToSend != null ? dataToSend : (getGameData() != null ? getGameData() : ""),
                         startTime
@@ -87,7 +84,7 @@ public abstract class GameHandler {
     protected void handlePlayerWin(@NotNull Player winner) {
         StreakManager.getInstance().onPlayerWin(winner);
 
-        // CRITICAL FIX: Only broadcast from MASTER server
+        // FIXED: Only master broadcasts player win
         ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
         if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
             long endTime = System.currentTimeMillis();
@@ -98,12 +95,9 @@ public abstract class GameHandler {
 
     protected void handleGameTimeout() {
         StreakManager.getInstance().onGameTimeout();
-
-        // CRITICAL FIX: Only broadcast from MASTER server
-        ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
-        if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
-            proxyManager.broadcastGameTimeout(getGameType(), "N/A");
-        }
+        
+        // NOTE: Timeout broadcasts now handled in individual game classes
+        // Each game class decides what data to send (e.g., correct answer)
     }
 
     @Nullable
