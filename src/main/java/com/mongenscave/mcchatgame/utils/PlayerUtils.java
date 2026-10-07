@@ -31,8 +31,8 @@ public class PlayerUtils {
         try {
             createAndRegisterAdvancement(key, title.getString(), Material.valueOf(icon.getString()));
 
-            plugin.getScheduler().runTaskLater(() -> grantAdvancement(player, key), 1L);
-            plugin.getScheduler().runTaskLater(() -> removeAdvancement(player, key), 100L);
+            plugin.getScheduler().runTaskLater(player, () -> grantAdvancement(player, key), 1L);
+            plugin.getScheduler().runTaskLater(player, () -> removeAdvancement(player, key), 100L);
         } catch (Exception exception) {
             LoggerUtils.error(exception.getMessage());
         }

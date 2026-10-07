@@ -8,15 +8,20 @@ import com.mongenscave.mcchatgame.models.impl.GameHangman;
 import org.bukkit.event.Listener;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.regex.Pattern;
+
 @SuppressWarnings("deprecation")
 public class GameListener implements Listener {
-    @EventHandler
+    private static final Pattern COLOR_PATTERN = Pattern.compile("(?i)[§&](#[0-9a-f]{6}|x([§&][0-9a-f]){6}|[0-9a-fk-or])");
+
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onChat(final @NotNull AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        String message = event.getMessage().trim();
+        String message = COLOR_PATTERN.matcher(event.getMessage()).replaceAll("").trim();
         Database database = McChatGame.getInstance().getDatabase();
 
         database.exists(player).thenAccept(exists -> {
@@ -30,9 +35,6 @@ public class GameListener implements Listener {
         if (currentGame instanceof GameHangman) {
             if (message.length() != 1 || !Character.isLetter(message.charAt(0))) return;
         }
-
-        // FIXED: Removed player answer broadcast - not needed, only local handleAnswer is required
-        // All servers (master and slave) handle answers locally
         
         String finalMessage = message;
         McChatGame.getInstance().getScheduler().runTask(() ->

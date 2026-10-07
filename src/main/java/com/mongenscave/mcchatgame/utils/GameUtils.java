@@ -45,13 +45,15 @@ public class GameUtils {
     public void playSoundToEveryone(@NotNull ConfigKeys enabled, @NotNull ConfigKeys sound) {
         if (!enabled.getBoolean()) return;
 
-        Bukkit.getOnlinePlayers().forEach(player -> player.playSound(player.getLocation(), sound.getString(), 0.5f, 1.0f));
+        Bukkit.getOnlinePlayers().forEach(player -> McChatGame.getInstance().getScheduler().runTask(player, () ->
+                player.playSound(player.getLocation(), sound.getString(), 0.5f, 1.0f)));
     }
 
     public void playSoundToWinner(@NotNull Player player, @NotNull ConfigKeys enabled, @NotNull ConfigKeys sound) {
         if (!enabled.getBoolean()) return;
 
-        player.playSound(player.getLocation(), sound.getString(), 0.5f, 1.0f);
+        McChatGame.getInstance().getScheduler().runTask(player, () ->
+                player.playSound(player.getLocation(), sound.getString(), 0.5f, 1.0f));
     }
 
     public void broadcastMessages(@NotNull MessageKeys messages, @NotNull String... placeholders) {

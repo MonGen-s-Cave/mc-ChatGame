@@ -3,7 +3,6 @@ package com.mongenscave.mcchatgame.managers;
 import com.google.gson.JsonObject;
 import com.mongenscave.mcchatgame.McChatGame;
 import com.mongenscave.mcchatgame.identifiers.GameType;
-import com.mongenscave.mcchatgame.identifiers.keys.ConfigKeys;
 import com.mongenscave.mcchatgame.identifiers.keys.MessageKeys;
 import com.mongenscave.mcchatgame.models.GameHandler;
 import com.mongenscave.mcchatgame.models.impl.*;
@@ -189,9 +188,7 @@ public class ProxyManager {
         plugin.getScheduler().runTask(() -> {
             try {
                 Sound soundEnum = Sound.valueOf(sound);
-                Bukkit.getOnlinePlayers().forEach(player ->
-                        player.playSound(player.getLocation(), soundEnum, 0.5f, 1.0f)
-                );
+                Bukkit.getOnlinePlayers().forEach(player -> plugin.getScheduler().runTask(player, () -> player.playSound(player.getLocation(), soundEnum, 0.5f, 1.0f)));
             } catch (Exception exception) {
                 LoggerUtils.error("Invalid sound: " + sound);
             }
