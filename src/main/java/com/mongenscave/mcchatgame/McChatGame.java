@@ -15,6 +15,7 @@ import com.mongenscave.mcchatgame.update.UpdateChecker;
 import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import com.mongenscave.mcchatgame.utils.PlayerUtils;
 import com.mongenscave.mcchatgame.utils.RegisterUtils;
+import dev.dejvokep.boostedyaml.dvs.versioning.BasicVersioning;
 import dev.dejvokep.boostedyaml.settings.dumper.DumperSettings;
 import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
 import dev.dejvokep.boostedyaml.settings.loader.LoaderSettings;
@@ -92,6 +93,7 @@ public final class McChatGame extends ZapperJavaPlugin {
 
         final UpdaterSettings updaterSettings = UpdaterSettings.builder()
                 .setKeepAll(true)
+                .setVersioning(new BasicVersioning("version"))
                 .build();
 
         config = loadConfig("config.yml", generalSettings, loaderSettings, updaterSettings);

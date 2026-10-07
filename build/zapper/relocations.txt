@@ -1,3 +1,2 @@
 org.bstats:com.mongenscave.mcchatgame.bstats
 com.github.Anon8281.universalScheduler:com.mongenscave.mcchatgame.universalScheduler
-dev.dejvokep.boostedyaml:com.mongenscave.mcchatgame.boostedyaml

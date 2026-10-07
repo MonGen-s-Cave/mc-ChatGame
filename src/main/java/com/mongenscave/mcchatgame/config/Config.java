@@ -1,5 +1,6 @@
 package com.mongenscave.mcchatgame.config;
 
+import com.mongenscave.mcchatgame.utils.LoggerUtils;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import dev.dejvokep.boostedyaml.settings.dumper.DumperSettings;
@@ -17,7 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "unused"})
 public class Config {
     private YamlDocument configuration;
 
@@ -32,7 +33,9 @@ public class Config {
     public Config(File file, InputStream defaults, GeneralSettings generalSettings, LoaderSettings loaderSettings, DumperSettings dumperSettings, UpdaterSettings updaterSettings) {
         try {
             configuration = YamlDocument.create(file, defaults, generalSettings, loaderSettings, dumperSettings, updaterSettings);
-        } catch (Exception ignored) {}
+        } catch (Exception exception) {
+            LoggerUtils.error("Failed to load " + file.getName(), exception);
+        }
     }
 
     public <T> T get(String route) {
