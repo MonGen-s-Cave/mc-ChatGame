@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.mongenscave"
-version = "1.1.3"
+version = "1.2.0"
 
 repositories {
     mavenCentral()
@@ -34,7 +34,7 @@ dependencies {
     zap("io.github.revxrsal:lamp.common:4.0.0-rc.17")
     zap("io.github.revxrsal:lamp.brigadier:4.0.0-rc.17")
     zap("com.github.Anon8281:UniversalScheduler:0.1.6")
-    zap("dev.dejvokep:boosted-yaml:1.3.6")
+    implementation("dev.dejvokep:boosted-yaml:1.3.6")
     zap("com.h2database:h2:2.3.232")
     zap("redis.clients:jedis:7.1.0")
 }
@@ -57,5 +57,4 @@ zapper {
 
     relocate("org.bstats", "bstats")
     relocate("com.github.Anon8281.universalScheduler", "universalScheduler")
-    relocate("dev.dejvokep.boostedyaml", "boostedyaml")
 }

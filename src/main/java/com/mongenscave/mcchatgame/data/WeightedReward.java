@@ -2,4 +2,6 @@ package com.mongenscave.mcchatgame.data;
 
 import org.jetbrains.annotations.NotNull;
 
-public record WeightedReward(int weight, @NotNull String command) {}
+import java.util.List;
+
+public record WeightedReward(int weight, @NotNull List<String> commands, @NotNull String displayName) {}

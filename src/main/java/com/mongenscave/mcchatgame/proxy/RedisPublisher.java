@@ -57,11 +57,13 @@ public class RedisPublisher {
         publish(RedisMessageType.PLAYER_ANSWER, message);
     }
 
-    public void publishPlayerWin(@NotNull String playerName, @NotNull GameType gameType, double timeTaken) {
+    public void publishPlayerWin(@NotNull String playerName, @NotNull GameType gameType, double timeTaken, @NotNull String answer, @NotNull String reward) {
         JsonObject message = RedisMessageType.PLAYER_WIN.createBaseMessage(serverId);
         message.addProperty("playerName", playerName);
         message.addProperty("gameType", gameType.name());
         message.addProperty("timeTaken", timeTaken);
+        message.addProperty("answer", answer);
+        message.addProperty("reward", reward);
 
         publish(RedisMessageType.PLAYER_WIN, message);
     }

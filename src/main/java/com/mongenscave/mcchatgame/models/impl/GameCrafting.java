@@ -280,6 +280,7 @@ public class GameCrafting extends GameHandler implements Listener {
         long endTime = System.currentTimeMillis();
         double timeTaken = (endTime - startTime) / 1000.0;
         String formattedTime = String.format("%.2f", timeTaken);
+        String winAnswer = targetItem;
 
         if (timeoutTask != null) timeoutTask.cancel();
 
@@ -288,15 +289,17 @@ public class GameCrafting extends GameHandler implements Listener {
         McChatGame.getInstance().getDatabase().incrementWin(player)
                 .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                 .thenAcceptAsync(v -> {
-                    GameUtils.rewardPlayer(player);
+                    String reward = GameUtils.rewardPlayer(player);
 
                     if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
                         GameUtils.broadcast(MessageKeys.CRAFTING_WIN.getMessage()
                                 .replace("{time}", formattedTime)
-                                .replace("{player}", player.getName()));
+                                .replace("{answer}", winAnswer)
+                                .replace("{player}", player.getName())
+                                .replace("{reward}", reward));
                     }
 
-                    handlePlayerWin(player);
+                    handlePlayerWin(player, winAnswer, reward);
                     cleanup();
                 }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 

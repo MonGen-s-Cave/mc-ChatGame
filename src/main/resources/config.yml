@@ -37,9 +37,17 @@ aliases:
   - "chatgame"
   - "mcchatgame"
 
+# Use {reward} in the win messages to show the display-name of the reward the player got.
+# Simple format (no display name): "[chance] command"
 rewards:
-  - "[20] give {player} gold_ingot 1" # [chance] (command)
-  - "[15] give {player} diamond 1"
+  - chance: 20
+    display-name: "&61x Gold Ingot"
+    commands:
+      - "give {player} gold_ingot 1"
+  - chance: 15
+    display-name: "&b1x Diamond"
+    commands:
+      - "give {player} diamond 1"
 
 time-between-games: 20
 min-players: 1
@@ -273,3 +281,5 @@ placeholders:
   hangman: "&fHangman &8» &#42f598{word} &8(&#42f598{time}&8)"
   crafting: "&fCrafting &8» &#42f598{word} &8(&#42f598{time}&8)"
   range: "&fRange &8» &#42f5980 ↔ 20 &8(&#42f598{time}&8)"
+
+version: 1

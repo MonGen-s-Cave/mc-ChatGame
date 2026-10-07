@@ -102,11 +102,11 @@ public class ProxyManager {
         publisher.publishGameTimeout(gameType, correctAnswer);
     }
 
-    public void broadcastPlayerWin(@NotNull Player player, @NotNull GameType gameType, double timeTaken) {
+    public void broadcastPlayerWin(@NotNull Player player, @NotNull GameType gameType, double timeTaken, @NotNull String answer, @NotNull String reward) {
         if (!enabled || !isMasterServer) return;
         LoggerUtils.info("Broadcasting PLAYER_WIN - Player: {}, Type: {}, Time: {}",
                 player.getName(), gameType, timeTaken);
-        publisher.publishPlayerWin(player.getName(), gameType, timeTaken);
+        publisher.publishPlayerWin(player.getName(), gameType, timeTaken, answer, reward);
     }
 
     public void handleRemoteGameStart(@NotNull GameType gameType, @NotNull String gameData, long startTime) {
@@ -150,15 +150,17 @@ public class ProxyManager {
         });
     }
 
-    public void handleRemotePlayerWin(@NotNull String playerName, @NotNull GameType gameType, double timeTaken) {
+    public void handleRemotePlayerWin(@NotNull String playerName, @NotNull GameType gameType, double timeTaken, @NotNull String answer, @NotNull String reward) {
         plugin.getScheduler().runTask(() -> {
             String formattedTime = String.format("%.2f", timeTaken);
             String message = getWinMessage(gameType)
                     .replace("{player}", playerName)
-                    .replace("{time}", formattedTime);
+                    .replace("{reward}", reward)
+                    .replace("{time}", formattedTime)
+                    .replace("{answer}", answer);
 
             if (gameType == GameType.RANGE) {
-                message = message.replace("{number}", "?");
+                message = message.replace("{number}", answer.isEmpty() ? "?" : answer);
             }
 
             GameUtils.broadcast(message);

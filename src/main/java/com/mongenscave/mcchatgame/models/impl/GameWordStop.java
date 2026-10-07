@@ -92,21 +92,24 @@ public class GameWordStop extends GameHandler {
             long endTime = System.currentTimeMillis();
             double timeTaken = (endTime - startTime) / 1000.0;
             String formattedTime = String.format("%.2f", timeTaken);
+            String winAnswer = correctMob;
 
             if (timeoutTask != null) timeoutTask.cancel();
 
             McChatGame.getInstance().getDatabase().incrementWin(player)
                     .thenCompose(v -> McChatGame.getInstance().getDatabase().setTime(player, timeTaken))
                     .thenAcceptAsync(v -> {
-                        GameUtils.rewardPlayer(player);
+                        String reward = GameUtils.rewardPlayer(player);
 
                         if (!McChatGame.getInstance().getProxyManager().isEnabled()) {
                             GameUtils.broadcast(MessageKeys.WORD_STOP_WIN.getMessage()
                                     .replace("{player}", player.getName())
-                                    .replace("{time}", formattedTime));
+                                    .replace("{reward}", reward)
+                                    .replace("{time}", formattedTime)
+                                    .replace("{answer}", winAnswer));
                         }
 
-                        handlePlayerWin(player);
+                        handlePlayerWin(player, winAnswer, reward);
                         cleanup();
                     }, MainThreadExecutorService.getInstance().getMainThreadExecutor());
 

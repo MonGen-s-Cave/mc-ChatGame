@@ -81,14 +81,14 @@ public abstract class GameHandler {
         return getGameData();
     }
 
-    protected void handlePlayerWin(@NotNull Player winner) {
+    protected void handlePlayerWin(@NotNull Player winner, @NotNull String answer, @NotNull String reward) {
         StreakManager.getInstance().onPlayerWin(winner);
 
         ProxyManager proxyManager = McChatGame.getInstance().getProxyManager();
         if (proxyManager.isEnabled() && proxyManager.isMasterServer()) {
             long endTime = System.currentTimeMillis();
             double timeTaken = (endTime - startTime) / 1000.0;
-            proxyManager.broadcastPlayerWin(winner, getGameType(), timeTaken);
+            proxyManager.broadcastPlayerWin(winner, getGameType(), timeTaken, answer, reward);
         }
     }
 

@@ -118,17 +118,17 @@ messages:
     - "&8&l&m--------------------------"
     - ""
 
-  math-game-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  range-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  crafting-win: "%prefix% &#42f598{player} &fwon the crafting game! &8(&7{time}&8)"
-  who-am-i-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  word-stop-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  word-guesser-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  copy-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  reverse-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  fill-out-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  random-characters-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
-  hangman-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8)"
+  math-game-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  range-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  crafting-win: "%prefix% &#42f598{player} &fwon the crafting game! &8(&7{time}&8) &7Reward: {reward}"
+  who-am-i-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  word-stop-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  word-guesser-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  copy-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  reverse-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  fill-out-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  random-characters-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
+  hangman-win: "%prefix% &#42f598{player} &fwon the chat game! &8(&7{time}&8) &7Reward: {reward}"
 
   math-game-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
   who-am-i-no-win: "%prefix% &cNo one guessed the correct answer! &8(&e{answer}&8)"
@@ -146,3 +146,5 @@ messages:
 
   no-crafting-game: "%prefix% &cNo crafting game is active!"
   update-notify: "%prefix% &aA new update for the plugin is now available! &8(&c{your} &f→ &e{latest}&8)"
+
+version: 1

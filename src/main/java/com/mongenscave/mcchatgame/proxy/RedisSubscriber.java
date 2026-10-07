@@ -191,9 +191,11 @@ public class RedisSubscriber extends JedisPubSub {
         String playerName = json.get("playerName").getAsString();
         GameType gameType = GameType.valueOf(json.get("gameType").getAsString());
         double timeTaken = json.get("timeTaken").getAsDouble();
+        String answer = json.has("answer") ? json.get("answer").getAsString() : "";
+        String reward = json.has("reward") ? json.get("reward").getAsString() : "";
 
         LoggerUtils.info("Player win - Player: {}, Type: {}, Time: {}", playerName, gameType, timeTaken);
-        proxyManager.handleRemotePlayerWin(playerName, gameType, timeTaken);
+        proxyManager.handleRemotePlayerWin(playerName, gameType, timeTaken, answer, reward);
     }
 
     private void handleBroadcastMessage(@NotNull JsonObject json) {
